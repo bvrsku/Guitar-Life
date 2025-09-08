@@ -94,7 +94,7 @@ def start_audio_stream(device_name):
         device=device_id,
         callback=audio_callback
     )
-    stream.start()
+ 
  --------------------
 def step_life(grid, rule):
     H, W = grid.shape
