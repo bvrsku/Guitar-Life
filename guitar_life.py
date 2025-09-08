@@ -1,10 +1,3 @@
-#!/usr/bin/env python3
-"""
-Guitar-driven Cellular Automaton
-Диапазон частот: 0–1500 Hz
-Игнорирование сигналов ниже 20 Hz
-Автоочистка при RMS < 0.01
-"""
 
 import sys
 import math
@@ -16,8 +9,7 @@ import sounddevice as sd
 import librosa
 import tkinter as tk
 from tkinter import ttk
-
-# -------------------- Настройки --------------------
+--------------------
 SAMPLE_RATE = 44100
 BLOCK_SIZE = 2048
 CHANNELS = 1
@@ -30,16 +22,13 @@ BG_COLOR = (10, 10, 12)
 CELL_COLOR = (56, 189, 248)
 SPAWN_BASE = 5
 SPAWN_SCALE = 380
-FREQ_MIN = 70.0 # минимальная частота
-FREQ_MAX = 500.0    # максимальная частота
+FREQ_MIN = 70.0 
+FREQ_MAX = 500.0    
 MIN_NOTE_FREQ = 60.0
 VOLUME_SCALE = 8.0
 
-pitch_queue = queue.Queue(maxsize=8)
-rms_queue = queue.Queue(maxsize=8)
-running = True
 
-# -------------------- GUI выбора --------------------
+ --------------------
 def choose_settings():
     devices = sd.query_devices()
     input_devices = [d for d in devices if d['max_input_channels'] > 0]
@@ -69,7 +58,7 @@ def choose_settings():
     root.mainloop()
     return selection
 
-# -------------------- Аудио --------------------
+------------------
 def audio_callback(indata, frames, time_info, status):
     if status:
         print("Audio status:", status, file=sys.stderr)
@@ -106,8 +95,7 @@ def start_audio_stream(device_name):
         callback=audio_callback
     )
     stream.start()
-
-# -------------------- Клеточные автоматы --------------------
+ --------------------
 def step_life(grid, rule):
     H, W = grid.shape
     new = np.zeros_like(grid, dtype=bool)
