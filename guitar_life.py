@@ -213,7 +213,7 @@ def run_app(rule):
     except: pass
     pygame.quit()
 
-# -------------------- Точка входа --------------------
+ --------------------
 if __name__=="__main__":
     print("Настройки...")
     sel = choose_settings()
