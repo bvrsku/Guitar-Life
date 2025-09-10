@@ -12,7 +12,7 @@ binaries = collect_dynamic_libs('sounddevice') + collect_dynamic_libs('librosa')
 datas = collect_data_files('librosa') + collect_data_files('numpy') \
         + collect_data_files('pygame') + collect_data_files('scipy') \
         + collect_data_files('audioread')
-
+#dwdawdwad
 a = Analysis(
     ['guitar_life.py'],   # основной скрипт
     pathex=[],
