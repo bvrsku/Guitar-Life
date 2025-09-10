@@ -9,7 +9,7 @@ import sounddevice as sd
 import librosa
 import tkinter as tk
 from tkinter import ttk
---------------------
+
 SAMPLE_RATE = 44100
 BLOCK_SIZE = 2048
 CHANNELS = 1
@@ -28,7 +28,6 @@ MIN_NOTE_FREQ = 60.0
 VOLUME_SCALE = 8.0
 
 
- --------------------
 def choose_settings():
     devices = sd.query_devices()
     input_devices = [d for d in devices if d['max_input_channels'] > 0]
@@ -58,7 +57,7 @@ def choose_settings():
     root.mainloop()
     return selection
 
-------------------
+
 def audio_callback(indata, frames, time_info, status):
     if status:
         print("Audio status:", status, file=sys.stderr)
@@ -95,7 +94,6 @@ def start_audio_stream(device_name):
         callback=audio_callback
     )
  
- --------------------
 def step_life(grid, rule):
     H, W = grid.shape
     new = np.zeros_like(grid, dtype=bool)
@@ -213,7 +211,6 @@ def run_app(rule):
     except: pass
     pygame.quit()
 
- --------------------
 if __name__=="__main__":
     print("Настройки...")
     sel = choose_settings()
