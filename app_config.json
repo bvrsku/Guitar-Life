@@ -1,0 +1,42 @@
+{
+  "layers": {
+    "layer_count": 3,
+    "layers_different": false,
+    "auto_rule_sec": 0,
+    "auto_palette_sec": 0,
+    "mirror_x": false,
+    "mirror_y": false,
+    "layer_settings": [
+      {
+        "rule": "Gnarl",
+        "age_palette": "Blue->Green->Yellow->Red",
+        "rms_palette": "Blue->Red",
+        "solo": true,
+        "mute": false,
+        "alpha_live": 255,
+        "alpha_old": 255,
+        "alpha": 255
+      },
+      {
+        "rule": "Gnarl",
+        "age_palette": "Ocean",
+        "rms_palette": "Blue->Green->Yellow->Red",
+        "solo": false,
+        "mute": true,
+        "alpha_live": 255,
+        "alpha_old": 255,
+        "alpha": 255
+      },
+      {
+        "rule": "Replicator",
+        "age_palette": "Blue->Red",
+        "rms_palette": "Blue->Red",
+        "solo": false,
+        "mute": false,
+        "alpha_live": 180,
+        "alpha_old": 180,
+        "alpha": 180
+      }
+    ]
+  }
+}
