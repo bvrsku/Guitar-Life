@@ -15,7 +15,6 @@
         "mute": false,
         "alpha_live": 255,
         "alpha_old": 255,
-        "alpha": 255
       },
       {
         "rule": "Gnarl",
@@ -25,7 +24,6 @@
         "mute": true,
         "alpha_live": 255,
         "alpha_old": 255,
-        "alpha": 255
       },
       {
         "rule": "Replicator",
@@ -34,8 +32,7 @@
         "solo": false,
         "mute": false,
         "alpha_live": 180,
-        "alpha_old": 180,
-        "alpha": 180
+        "alpha_old": 180
       }
     ]
   }
