@@ -1,0 +1,22 @@
+{
+  "layers": {
+    "layer_settings": [
+      {
+        "rule": "Day&Night",
+        "age_palette": "Fire",
+        "rms_palette": "Fire",
+        "color_mode": "HSV-дизайны",
+        "rms_mode": "brightness",
+        "alpha_live": 85,
+        "alpha_old": 125,
+        "max_age": 41,
+        "mix": "Normal",
+        "solo": false,
+        "mute": false,
+        "palette_mix": 0.5,
+        "blend_mode": "normal",
+        "spawn_method": "Стабильные блоки"
+      }
+    ]
+  }
+}

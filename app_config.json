@@ -1,40 +1,55 @@
 {
   "layers": {
-    "layer_count": 3,
-    "layers_different": false,
-    "auto_rule_sec": 0,
-    "auto_palette_sec": 0,
-    "mirror_x": false,
-    "mirror_y": false,
+    "layer_count": 5,
     "layer_settings": [
       {
-        "rule": "Gnarl",
-        "age_palette": "Blue->Green->Yellow->Red",
-        "rms_palette": "Blue->Red",
-        "solo": true,
+        "rule": "Day&Night",
+        "age_palette": "Fire",
+        "rms_palette": "Fire",
+        "solo": false,
         "mute": false,
-        "alpha_live": 255,
-        "alpha_old": 255,
-        "alpha": 255
+        "alpha_live": 85,
+        "alpha_old": 85,
+        "alpha": 85
       },
       {
-        "rule": "Gnarl",
-        "age_palette": "Ocean",
-        "rms_palette": "Blue->Green->Yellow->Red",
+        "rule": "HighLife",
+        "age_palette": "Blue->Green->Yellow->Red",
+        "rms_palette": "Fire",
         "solo": false,
-        "mute": true,
-        "alpha_live": 255,
-        "alpha_old": 255,
-        "alpha": 255
+        "mute": false,
+        "alpha_live": 220,
+        "alpha_old": 140,
+        "alpha": 180
+      },
+      {
+        "rule": "Day&Night",
+        "age_palette": "Neon",
+        "rms_palette": "Ocean",
+        "solo": false,
+        "mute": false,
+        "alpha_live": 220,
+        "alpha_old": 140,
+        "alpha": 180
       },
       {
         "rule": "Replicator",
-        "age_palette": "Blue->Red",
-        "rms_palette": "Blue->Red",
+        "age_palette": "Neon",
+        "rms_palette": "Ukraine",
         "solo": false,
         "mute": false,
-        "alpha_live": 180,
-        "alpha_old": 180,
+        "alpha_live": 220,
+        "alpha_old": 140,
+        "alpha": 180
+      },
+      {
+        "rule": "Seeds",
+        "age_palette": "Ukraine",
+        "rms_palette": "Blue->Green->Yellow->Red",
+        "solo": false,
+        "mute": false,
+        "alpha_live": 220,
+        "alpha_old": 140,
         "alpha": 180
       }
     ]
