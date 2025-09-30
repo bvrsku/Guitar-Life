@@ -5289,10 +5289,8 @@ def load_config():
     try:
         with open('guitar_config.json', 'r', encoding='utf-8') as f:
             config = json.load(f)
-        print("📁 Configuration loaded from guitar_config.json")
         return config
     except FileNotFoundError:
-        print("⚠️ guitar_config.json not found, using defaults")
         # Создаем конфигурацию по умолчанию
         default_config = {
             'device': 'Default',
@@ -5316,29 +5314,22 @@ def load_config():
         }
         return default_config
     except Exception as e:
-        print(f"❌ Error loading config: {e}")
+        print(f"loading config: {e}")
         return {'device': 'Default', 'layer_count': 3}
 
-
 if __name__ == "__main__":
+    main()
     # Загружаем конфигурацию и запускаем приложение
     import signal
     import sys
-    
-    def signal_handler(sig, frame):
-        print('\n🛑 Программа прервана пользователем')
-        pygame.quit()
-        sys.exit(0)
     
     signal.signal(signal.SIGINT, signal_handler)
     
     try:
         sel = load_config()
         main(sel)
-    except KeyboardInterrupt:
-        print('\n🛑 Программа прервана пользователем')
     except Exception as e:
-        print(f'❌ Ошибка запуска: {e}')
+        print(f'Ошибка запуска: {e}')
         import traceback
         traceback.print_exc()
     finally:
