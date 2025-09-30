@@ -1,6 +1,4 @@
 """
-FX.py - Файл визуальных эффектов для Guitar Life
-Содержит все функции применения эффектов к pygame Surface
 """
 
 import pygame
