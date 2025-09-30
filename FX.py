@@ -76,11 +76,11 @@ def apply_dither(surface: pygame.Surface):
     # Создаем простой dither pattern
     pattern = np.array([[0, 0.5], [0.75, 0.25]])
     
-    # Создаем тайл нужного размера (height, width) 
+    #Тайл нужного размера (height, width) 
     tile_height = (height // pattern.shape[0] + 1) * pattern.shape[0]
     tile_width = (width // pattern.shape[1] + 1) * pattern.shape[1]
     
-    # Тайлим pattern
+    # Тайл pattern
     tile = np.tile(pattern, (tile_height // pattern.shape[0], tile_width // pattern.shape[1]))
     
     # Обрезаем до нужного размера
@@ -90,7 +90,7 @@ def apply_dither(surface: pygame.Surface):
     tile = tile[:, :, np.newaxis]  # (height, width, 1)
     
     # Применяем dither
-    arr = arr + (tile * 16 - 8)  # Небольшое случайное смещение
+    arr = arr + (tile * 16 - 8)
     
     # Обрезаем значения
     arr = np.clip(arr, 0, 255).astype(np.uint8)
