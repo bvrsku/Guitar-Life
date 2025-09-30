@@ -8,21 +8,15 @@
         "rms_palette": "Fire",
         "solo": false,
         "mute": false,
-<<<<<<< HEAD
         "alpha_live": 85,
         "alpha_old": 85,
         "alpha": 85
-=======
-        "alpha_live": 255,
-        "alpha_old": 255,
->>>>>>> 45125208628a04d37cc27c8605f2892846aae914
       },
       {
         "rule": "HighLife",
         "age_palette": "Blue->Green->Yellow->Red",
         "rms_palette": "Fire",
         "solo": false,
-<<<<<<< HEAD
         "mute": false,
         "alpha_live": 220,
         "alpha_old": 140,
@@ -37,11 +31,6 @@
         "alpha_live": 220,
         "alpha_old": 140,
         "alpha": 180
-=======
-        "mute": true,
-        "alpha_live": 255,
-        "alpha_old": 255,
->>>>>>> 45125208628a04d37cc27c8605f2892846aae914
       },
       {
         "rule": "Replicator",
@@ -49,7 +38,6 @@
         "rms_palette": "Ukraine",
         "solo": false,
         "mute": false,
-<<<<<<< HEAD
         "alpha_live": 220,
         "alpha_old": 140,
         "alpha": 180
@@ -63,11 +51,7 @@
         "alpha_live": 220,
         "alpha_old": 140,
         "alpha": 180
-=======
-        "alpha_live": 180,
-        "alpha_old": 180
->>>>>>> 45125208628a04d37cc27c8605f2892846aae914
       }
     ]
   }
-}
+} 

@@ -5,8 +5,6 @@ import queue
 import json
 import os
 
-# Проверка работоспособности tkinter
-print("✅ settings_window.py загружен, tkinter доступен")
 
 class SettingsWindow:
     def __init__(self, app_instance):
@@ -14,31 +12,23 @@ class SettingsWindow:
         self.window = None
         self.is_running = False
         
-        # Queue для передачи изменений в основное приложение
         self.settings_queue = queue.Queue()
         
-        # Переменные для хранения текущих значений
         self.vars = {}
         
     def start(self):
         """Запускает окно настроек в отдельном потоке"""
-        print("🔧 DEBUG: SettingsWindow.start() вызван")
         if not self.is_running:
-            print("🔧 DEBUG: Создаем новый поток для окна настроек")
             self.is_running = True
             thread = threading.Thread(target=self._run_window, daemon=True)
             thread.start()
-        else:
-            print("🔧 DEBUG: Окно настроек уже запущено")
     
     def _run_window(self):
         """Создает и запускает GUI окно"""
-        print("🔧 DEBUG: _run_window() запущен")
         try:
             self.window = tk.Tk()
             self.window.title("Guitar Life - Settings")
             self.window.geometry("400x600")
-            print("🔧 DEBUG: tkinter окно создано")
             
             # Создаем интерфейс
             self._create_interface()
@@ -49,12 +39,8 @@ class SettingsWindow:
             # Запускаем цикл обновления
             self.window.after(100, self._update_loop)
             
-            print("🔧 DEBUG: Запускаем mainloop")
             self.window.mainloop()
-            print("🔧 DEBUG: mainloop завершен")
             
-        except Exception as e:
-            print(f"❌ Ошибка в _run_window: {e}")
             import traceback
             traceback.print_exc()
         finally:
