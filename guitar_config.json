@@ -31,7 +31,7 @@
   "soft_fade_down": 1,
   "soft_fade_up": 5,
   "soft_clear_threshold": 70,
-  "age_bias": 80,
+  "age_bias": 0,
   "mirror_x": false,
   "mirror_y": false,
   "auto_rule_sec": 0,
