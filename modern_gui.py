@@ -4,7 +4,7 @@ import json
 
 def show_modern_gui(devices):
     root = tk.Tk()
-    root.title("Guitar Life v13 - Полные настройки")
+    root.title("Settings")
     root.geometry("600x500")
     
     result = None
