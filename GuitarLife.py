@@ -26,12 +26,9 @@ try:
     SETTINGS_WINDOW_AVAILABLE = True
 except ImportError:
     SETTINGS_WINDOW_AVAILABLE = False
-
-# Импорт SimpleColors из core модуля
 try:
     from core.ui_components import SimpleColors
 except ImportError:
-    # Fallback определение SimpleColors если core модуль недоступен
     class SimpleColors:
         """Простая цветовая схема для UI"""
         # Основные цвета
@@ -71,7 +68,7 @@ except ImportError:
         # Дополнительные цвета
         WHITE = (255, 255, 255)
 
-# Modern resource utilities
+# resource utilities
 try:
     from resource_utils import resource_manager, load_app_config, save_app_config, load_guitar_config, save_guitar_config
 except ImportError:
@@ -169,12 +166,6 @@ FREQ_MIN, FREQ_MAX = 72.0, 1500.0
 MIN_NOTE_FREQ = 70.0
 VOLUME_SCALE = 8.0
 
-# === Параметры очистки из guitar_life.py ===
-SPAWN_BASE, SPAWN_SCALE = 30, 120  # Уменьшено для меньшего количества клеток
-FREQ_MIN, FREQ_MAX = 70.0, 1500.0
-MIN_NOTE_FREQ = 60.0
-VOLUME_SCALE = 8.0  # Уменьшено для более мягкой реакции на звук
-
 # Default timing and threshold values
 DEFAULT_CLEAR_RMS = 0.004
 DEFAULT_COLOR_RMS_MIN = 0.004
@@ -196,22 +187,19 @@ audio_rms = 0.0
 audio_pitch = 0.0
 audio_gain = 0.0
 
-# ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
+# ==================== Utilities ====================
 
 def clamp01(x: float) -> float:
     """Ограничивает значение в диапазоне [0, 1]"""
     return max(0.0, min(1.0, x))
 
-
 def get_hsv_design_palettes():
     """Возвращает палитры для HSV-дизайнов (комбинированный режим)"""
     return HSV_DESIGN_PALETTES
 
-
 def get_hsv_color_palettes():
     """Возвращает палитры для HSV палитр (только RMS режим)"""
     return HSV_COLOR_PALETTES
-
 
 def get_palette_by_category(category: str):
     """Возвращает палитры по категории"""
@@ -253,11 +241,9 @@ class Layer:
         self.tick_ms = DEFAULT_TICK_MS
         self.spawn_percent = spawn_percent  # Процент спавна клеток (0-300%)
         self.aging_speed = aging_speed  # Скорость старения
-        self.invert_age_palette = invert_age_palette  # Инверсия age палитры
-        self.invert_rms_palette = invert_rms_palette  # Инверсия rms палитры
-
-# ==================== ПРОСТАЯ ЗАГЛУШКА HUD ===================
-
+        self.invert_age_palette = invert_age_palette 
+        self.invert_rms_palette = invert_rms_palette 
+# ==================== HUD ===================
 
 class HUD:
     """Полнофункциональный HUD с модулями настройки слоев"""
