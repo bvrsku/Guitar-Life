@@ -1,4 +1,6 @@
 from __future__ import annotations
+#!/usr/bin/env python3
+# -*-coding: utf-8 -*-
 
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="pygame.pkgdata")
@@ -27,7 +29,7 @@ except ImportError:
 
 # Импорт SimpleColors из core модуля
 try:
-    from ui_components import SimpleColors
+    from core.ui_components import SimpleColors
 except ImportError:
     # Fallback определение SimpleColors если core модуль недоступен
     class SimpleColors:
@@ -69,6 +71,7 @@ except ImportError:
         # Дополнительные цвета
         WHITE = (255, 255, 255)
 
+# Modern resource utilities
 try:
     from resource_utils import resource_manager, load_app_config, save_app_config, load_guitar_config, save_guitar_config
 except ImportError:
@@ -166,6 +169,12 @@ FREQ_MIN, FREQ_MAX = 72.0, 1500.0
 MIN_NOTE_FREQ = 70.0
 VOLUME_SCALE = 8.0
 
+# === Параметры очистки из guitar_life.py ===
+SPAWN_BASE, SPAWN_SCALE = 30, 120  # Уменьшено для меньшего количества клеток
+FREQ_MIN, FREQ_MAX = 70.0, 1500.0
+MIN_NOTE_FREQ = 60.0
+VOLUME_SCALE = 8.0  # Уменьшено для более мягкой реакции на звук
+
 # Default timing and threshold values
 DEFAULT_CLEAR_RMS = 0.004
 DEFAULT_COLOR_RMS_MIN = 0.004
@@ -174,8 +183,6 @@ DEFAULT_TICK_MS = 30
 DEFAULT_PTICK_MIN_MS = 60
 DEFAULT_PTICK_MAX_MS = 200
 
-# Audio settings
-CHANNELS = 1
 # Clear types for different clearing methods
 CLEAR_TYPES = [
     "Полная очистка",        # Complete clear - all cells
@@ -249,7 +256,7 @@ class Layer:
         self.invert_age_palette = invert_age_palette  # Инверсия age палитры
         self.invert_rms_palette = invert_rms_palette  # Инверсия rms палитры
 
-# ==================== HUD ===================
+# ==================== ПРОСТАЯ ЗАГЛУШКА HUD ===================
 
 
 class HUD:
@@ -284,7 +291,10 @@ class HUD:
     def _create_layer_modules(self):
         """Создает модули настройки для каждого слоя"""
         self.layer_modules = []
+        
+        # Доступные опции для выпадающих списков
         palette_options = PALETTE_OPTIONS
+        
         rule_options = [
             "Conway", "HighLife", "Day&Night", "Replicator", 
             "Seeds", "Maze", "Coral", "LifeWithoutDeath", "Gnarl"
@@ -316,6 +326,7 @@ class HUD:
     def _create_single_layer_module(self, layer_index, y_offset, palette_options, 
                                    rule_options, blend_options, rms_mode_options, spawn_options):
         """Создает модуль настройки для одного слоя"""
+        
         module = {
             'layer_index': layer_index,
             'y_offset': y_offset,
@@ -428,7 +439,7 @@ class HUD:
         # Age Bias (%)
         module['controls']['age_bias'] = UISlider(
             x_left, current_y, slider_width, control_height,
-            0, 100, 10, f"Age Bias (%)", "{:.0f}"
+            0, 100, 15, f"Age Bias (%)", "{:.0f}"
         )
         current_y += 30
         module['controls']['alpha_live'] = UISlider(
@@ -1108,6 +1119,16 @@ except ImportError:
     tk = None
     ttk = None 
     filedialog = None
+
+# === CONSTANTS AND CONFIGURATION ===
+
+# Audio settings
+CHANNELS = 1
+
+# Grid and display settings
+GRID_W, GRID_H = 120, 70
+BG_COLOR = (10, 10, 12)
+FIELD_OFFSET_X = 0
 
 # Cellular automaton rules
 CA_RULES = [
@@ -4249,7 +4270,7 @@ class App:
         # Новые параметры контроля популяции
         self.max_cells_percent = sel.get('max_cells_percent', 90)  # Максимальный процент заполнения сетки
         self.soft_clear_threshold = sel.get('soft_clear_threshold', 80)  # При каком проценте начинать очистку
-        self.age_bias = sel.get('age_bias', 0)  # Вероятность удаления старых клеток vs случайных
+        self.age_bias = sel.get('age_bias', 20)  # Вероятность удаления старых клеток vs случайных
         self.old_cells_priority = sel.get('old_cells_priority', False)  # Приоритет старых клеток при удалении
         # self.clear_type = sel.get('clear_type', 'Полная очистка')  # Тип очистки для кнопки Clear
         # self.clear_partial_percent = sel.get('clear_partial_percent', 80)  # Процент для частичной очистки
@@ -4603,6 +4624,7 @@ class App:
             if layer_idx < len(self.layers):
                 palette_mix = max(0.0, min(1.0, float(value)))
                 self.layers[layer_idx].palette_mix = palette_mix
+                print(f"🎨 Layer {layer_idx + 1} Palette Mix: {palette_mix:.2f} (Age←→RMS)")
                 self.save_layer_settings()  # Сохраняем настройки
         
         # Параметры эффектов
@@ -4944,37 +4966,73 @@ class App:
                     effective_increment = age_increment + (1 if random_increment else 0)
                 else:
                     effective_increment = age_increment
+                
                 # Векторизованное обновление возраста только для живых клеток
                 alive_mask = layer.grid
                 layer.age[alive_mask] += effective_increment
                 layer.age[~alive_mask] = 0
+                
                 # Обновление правил CA
                 layer.grid = step_life(layer.grid, layer.rule)
+                
                 # SAFETY: Векторизованная проверка и восстановление формы сетки
                 if layer.grid.shape != (GRID_H, GRID_W):
+                    # print(f"🚨 CRITICAL: Layer {i} grid shape corrupted: {layer.grid.shape} != ({GRID_H}, {GRID_W})")
+                    # print(f"   Recreating grid with correct shape...")
                     new_grid = np.zeros((GRID_H, GRID_W), dtype=bool)
                     if layer.grid.size > 0:
                         copy_h = min(layer.grid.shape[0], GRID_H)
                         copy_w = min(layer.grid.shape[1], GRID_W)
                         new_grid[:copy_h, :copy_w] = layer.grid[:copy_h, :copy_w]
                     layer.grid = new_grid
+                
                 # SAFETY: Векторизованная проверка формы массива возраста
                 if layer.age.shape != layer.grid.shape:
+                    # print(f"🚨 CRITICAL: Layer {i} age shape mismatch: {layer.age.shape} != {layer.grid.shape}")
                     layer.age = np.zeros_like(layer.grid, dtype=np.int32)
+                
                 # Векторизованная очистка краев для предотвращения визуального "выползания"
                 layer.grid[[0, -1], :] = False  # Верхний и нижний края одновременно
                 layer.grid[:, [0, -1]] = False  # Левый и правый края одновременно
+                
+                # Убираем debug проверки координат для улучшения производительности
+                # if np.any(layer.grid):
+                #     live_coords = np.where(layer.grid)
+                #     max_r, max_c = np.max(live_coords[0]), np.max(live_coords[1])
+                #     min_r, min_c = np.min(live_coords[0]), np.min(live_coords[1])
+                #     
+                #     if max_r >= GRID_H or max_c >= GRID_W or min_r < 0 or min_c < 0:
+                #         print(f"WARNING: Layer {i} has cells at invalid coords: r=[{min_r}, {max_r}], c=[{min_c}, {max_c}]")
+                #     
+                #     if max_r >= GRID_H-1 or max_c >= GRID_W-1 or min_r <= 0 or min_c <= 0:
+                #         print(f"EDGE CHECK: Layer {i} has cells near edges: r=[{min_r}, {max_r}], c=[{min_c}, {max_c}]")
+                
                 # Векторизованное зеркалирование
                 if self.mirror_x:
                     layer.grid = np.fliplr(layer.grid)
                 if self.mirror_y:
                     layer.grid = np.flipud(layer.grid)
+                
                 # Удаляем клетки, которые достигли максимального возраста для этого слоя
                 old_cells_mask = layer.age >= layer.max_age
                 layer.grid[old_cells_mask] = False
                 layer.age[old_cells_mask] = 0
-            except Exception:
-                pass
+                    
+            except Exception as e:
+                print(f"🚨 ERROR updating layer {i}: {e}")
+                print(f"   Layer rule: {getattr(layer, 'rule', 'Unknown')}")
+                print(f"   Grid shape: {getattr(layer.grid, 'shape', 'Unknown') if hasattr(layer, 'grid') else 'No grid'}")
+                
+                # Emergency fallback - recreate layer
+                try:
+                    layer.grid = np.zeros((GRID_H, GRID_W), dtype=bool)
+                    layer.age = np.zeros((GRID_H, GRID_W), dtype=np.int32)
+                    print(f"   ✅ Emergency recovery: Layer {i} reset")
+                except Exception as recovery_error:
+                    print(f"   💥 Recovery failed: {recovery_error}")
+        
+        # Применяем мягкий контроль популяции для всех слоев
+        self.soft_population_control()
 
     def render(self, rms: float, pitch: float):
         self.renderer.clear(BG_COLOR)
@@ -4993,12 +5051,21 @@ class App:
         solos = [layer for layer in self.layers if layer.solo and not layer.mute]
         layers = solos if solos else [layer for layer in self.layers if not layer.mute]
 
+        # Убираем излишний debug вывод для улучшения производительности
+        # print(f"RENDER DEBUG: Total layers={len(self.layers)}")
+        # for idx, layer in enumerate(self.layers):
+        #     print(f"  Layer {idx}: solo={layer.solo}, mute={layer.mute}, rule={layer.rule}, cells={np.sum(layer.grid)}")
+        # print(f"RENDER DEBUG: Solos found={len(solos)}, Will render={len(layers)} layers")
+        
+        # Отрисовываем каждый слой
         for i, layer in enumerate(layers):
             live_cells = np.sum(layer.grid)
+            print(f"RENDER DEBUG: Layer {i} ({layer.rule}): {live_cells} live cells, solo={layer.solo}, mute={layer.mute}")
             try:
                 img = build_color_image(layer.grid, layer.age, "Возраст + RMS", rms, pitch, cfg,
                                         layer.age_palette, layer.rms_palette, layer.rms_mode, 
                                         layer.blend_mode, layer.rms_enabled, layer.max_age, layer.palette_mix)
+                # --- Передаем маски возраста и живых клеток для alpha_old ---
                 self.renderer.last_age_mask = layer.age.copy()
                 self.renderer.last_grid_mask = layer.grid.copy()
                 self.renderer.last_max_age = layer.max_age
@@ -5013,8 +5080,9 @@ class App:
                 import traceback
                 traceback.print_exc()
                 continue
-
+                
         frame = self.renderer.canvas
+
         # FX chain (включаемые опции из GUI)
         if self.fx.get('trails', False):
             apply_trails(frame, float(self.fx.get('trail_strength', 0.06)))
@@ -5039,7 +5107,7 @@ class App:
     
     def generate_multiple_layers_from_configs(self, layer_configs: List[LayerConfig]) -> None:
         """Генерирует несколько слоев из списка конфигураций и заменяет текущие слои"""
-
+        
         # Очищаем текущие слои
         self.layers.clear()
         
@@ -5087,6 +5155,8 @@ class App:
         
         for i, layer in enumerate(self.layers):
             self.layer_generator.update_layer_transparency(layer, alpha_live, alpha_old)
+        
+        # Обновляем HUD
         self.hud.update_from_app(self)
     
     def create_layer_config_from_current(self, layer_index: int) -> Optional[LayerConfig]:
@@ -5108,7 +5178,7 @@ class App:
                 solo=layer.solo,
                 mute=layer.mute,
                 spawn_method="Стабильные блоки",  # По умолчанию
-                # spawn_percent=30  # По умолчанию 30%
+                spawn_percent=30  # По умолчанию 30%
             )
         
         return None
@@ -5155,12 +5225,47 @@ class App:
                     if 0 <= r < GRID_H and 0 <= c < GRID_W:
                         layer.grid[r, c] = True
                         layer.age[r, c] = 1
-                        
     def clear_all_layers(self):
         """Очищает все слои"""
         for layer in self.layers:
             layer.grid.fill(False)
             layer.age.fill(0)
+
+    def show_help(self):
+        """Показывает справку по горячим клавишам"""
+        help_text = """
+         ОСНОВНОЕ УПРАВЛЕНИЕ:
+          ESC          - Выход из приложения
+          SPACE        - Пауза/Продолжение симуляции
+          TAB          - Показать/скрыть HUD (панель управления)
+          H            - Эта справка
+
+         УПРАВЛЕНИЕ СЛОЯМИ:
+          C            - Очистить все слои
+          R            - Рандомизировать слои (создать новые паттерны)
+          T            - Создать тестовый паттерн
+          1-5          - Генерация 1-5 случайных слоев
+          F4-F6        - Генерация пресетных конфигураций
+          Ctrl+D       - Дублирование текущего слоя
+          +/-          - Добавление нового слоя
+
+         АУДИО И ЭФФЕКТЫ:
+          F1           - Переключить эффект следов (trails)
+          F2           - Переключить эффект размытия (blur)
+          F3           - Применить Joy Division эффект
+          F12          - Открыть окно настроек
+
+         МЫШЬ:
+          Клик в области сетки - Рисование/стирание клеток
+          Перетаскивание       - Рисование множественных клеток
+
+         СОВЕТЫ:
+          • Используйте TAB для скрытия HUD и полного погружения в визуализацию
+          • Экспериментируйте с разными правилами клеточных автоматов
+          • Слушайте музыку - аудио синхронизация создает удивительные эффекты
+          • Сохраняйте интересные паттерны через рисование мышью
+        """
+        print(help_text)
 
     def apply_different_layer_settings(self):
         """Применяет различные настройки из app_config.json к слоям"""
@@ -5306,6 +5411,7 @@ class App:
                         self.hud_cache_valid = False  # Инвалидируем кэш
                     elif ev.key == pygame.K_h:
                         self.show_help()
+                    # Добавить pass для пустых if/elif
                     else:
                         pass
                 elif ev.type == pygame.KEYUP:
@@ -5341,6 +5447,10 @@ class App:
                 self.last_tick = now
                 births = int(SPAWN_BASE + SPAWN_SCALE *
                              clamp01(math.log10(1.0 + VOLUME_SCALE * max(0.0, rms))))
+                
+                # Убираем debug вывод для улучшения производительности
+                # if births > 0 and rms > 0.001:
+                #     print(f"DEBUG: RMS={rms:.4f}, births={births}")
 
                 if rms <= self.sel.get('clear_rms', DEFAULT_CLEAR_RMS):
                     self.soft_clear()
@@ -5348,6 +5458,10 @@ class App:
                     self.soft_recover()
                 self.update_layers(births)
                 
+                # Убираем подсчет живых клеток на каждом тике для производительности
+                # total_alive = sum(np.sum(layer.grid) for layer in self.layers)
+                # if total_alive > 0:
+                #     print(f"DEBUG: {total_alive} cells alive after tick")
             simulation_time = time.time() - simulation_start
 
             # рендер
@@ -5391,9 +5505,15 @@ class App:
                 })
                 self._info_last_update = current_time
             
-            # быстрые и кэшированные данные
+            # Объединяем быстрые и кэшированные данные
             info = {**fast_info, **self._cached_info}
-
+            
+            # ЭКСПЕРИМЕНТАЛЬНОЕ отключение HUD для тестирования производительности
+            # Раскомментируйте следующую строку чтобы полностью отключить HUD
+            # self.hud.visible = False
+            
+            # Простой текстовый HUD вместо сложного GUI
+            # Можно переключать: True = простой быстрый HUD, False = полнофункциональный медленный HUD
             use_simple_hud = getattr(self.hud, "mini_held", False)
             
             # HUD отрисовка с профилированием
@@ -5454,6 +5574,10 @@ def main():
     try:
         app = App(sel)
         
+        # for i, layer in enumerate(app.layers):
+        #     cells = np.sum(layer.grid)
+        # app.create_test_pattern()
+            # continue
         for i, layer in enumerate(app.layers):
             cells = np.sum(layer.grid)
         app.run()
