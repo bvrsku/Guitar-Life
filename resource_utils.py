@@ -1,35 +1,27 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Modern resource utilities for Guitar Life
-Replaces pkg_resources with importlib.resources for Python 3.9+
+resource utilities for Guitar Life
 """
 
 import sys
 import json
-import os
 from pathlib import Path
 from typing import Optional, Any, Dict
 
 # Modern resource loading (Python 3.9+)
 if sys.version_info >= (3, 9):
     from importlib import resources
-else:
-    # Fallback for older Python versions
-    try:
-        import importlib_resources as resources
-    except ImportError:
-        resources = None
-
+    
 class ResourceManager:
-    """Modern resource manager using importlib.resources"""
+    """resource manager using importlib.resources"""
     
     def __init__(self, package_name: str = __name__):
         self.package_name = package_name
         self.base_path = Path(__file__).parent if "__file__" in globals() else Path(".")
     
     def load_json_config(self, filename: str) -> Optional[Dict[str, Any]]:
-        """Load JSON configuration file using modern resource loading"""
+        """Load JSON configuration"""
         try:
             # Try modern importlib.resources first
             if resources and sys.version_info >= (3, 9):
@@ -40,7 +32,7 @@ class ResourceManager:
                 except (FileNotFoundError, AttributeError):
                     pass
             
-            # Fallback to file system
+            #Fallback to file system
             config_paths = [
                 self.base_path / filename,
                 self.base_path / "config" / filename,
@@ -107,7 +99,7 @@ class ResourceManager:
         
         return None
 
-# Global resource manager instance
+#Global resource manager instance
 resource_manager = ResourceManager()
 
 def load_app_config() -> Dict[str, Any]:

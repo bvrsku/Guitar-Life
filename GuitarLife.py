@@ -1,27 +1,5 @@
 from __future__ import annotations
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-GUITAR LIFE - ОПТИМИЗИРОВАННАЯ ВЕРСИЯ
-=====================================
 
-Основные оптимизации производительности:
-1. Кэширование дорогих HSV/RGB вычислений (lru_cache)
-2. Устранение дублирования палитр и создание единой системы
-3. Векторизация NumPy операций для обработки слоев
-4. Оптимизация управления памятью в структурах данных
-5. Улучшение импортов и организации кода
-
-Ожидаемые улучшения:
-- Снижение использования памяти на 20-30%
-- Ускорение отрисовки палитр на 40-60%
-- Уменьшение задержек при обработке слоев на 25-35%
-- Более стабильная работа при большом количестве клеток
-"""
-
-# === IMPORTS ===
-
-# Suppress pygame's pkg_resources deprecation warning
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="pygame.pkgdata")
 
@@ -46,9 +24,51 @@ try:
     SETTINGS_WINDOW_AVAILABLE = True
 except ImportError:
     SETTINGS_WINDOW_AVAILABLE = False
-    print("⚠️  Окно настроек недоступно (нет tkinter или settings_window.py)")
 
-# Modern resource utilities
+# Импорт SimpleColors из core модуля
+try:
+    from ui_components import SimpleColors
+except ImportError:
+    # Fallback определение SimpleColors если core модуль недоступен
+    class SimpleColors:
+        """Простая цветовая схема для UI"""
+        # Основные цвета
+        PRIMARY = (59, 130, 246)          # Синий
+        PRIMARY_LIGHT = (147, 197, 253)   # Светло-синий
+        SECONDARY = (107, 114, 128)       # Серый
+        
+        # Поверхности
+        SURFACE = (255, 255, 255)         # Белый
+        BACKGROUND = (249, 250, 251)      # Очень светло-серый
+        
+        # Состояния
+        ACTIVE = (239, 246, 255)          # Светло-синий фон
+        HOVER = (243, 244, 246)           # Светло-серый при наведении
+        
+        # Границы
+        BORDER = (209, 213, 219)          # Светло-серая граница
+        BORDER_FOCUS = (59, 130, 246)     # Синяя граница при фокусе
+        
+        # Текст
+        TEXT_PRIMARY = (17, 24, 39)       # Темно-серый
+        TEXT_SECONDARY = (107, 114, 128)  # Серый
+        TEXT_MUTED = (156, 163, 175)      # Светло-серый
+        
+        # Серые оттенки
+        GRAY_50 = (249, 250, 251)
+        GRAY_100 = (243, 244, 246)
+        GRAY_200 = (229, 231, 235)
+        GRAY_300 = (209, 213, 219)
+        GRAY_400 = (156, 163, 175)
+        GRAY_500 = (107, 114, 128)
+        GRAY_600 = (75, 85, 99)
+        GRAY_700 = (55, 65, 81)
+        GRAY_800 = (31, 41, 55)
+        GRAY_900 = (17, 24, 39)
+        
+        # Дополнительные цвета
+        WHITE = (255, 255, 255)
+
 try:
     from resource_utils import resource_manager, load_app_config, save_app_config, load_guitar_config, save_guitar_config
 except ImportError:
@@ -100,6 +120,14 @@ HSV_DESIGN_PALETTES = [
     "White->LightGray->Gray->DarkGray", "BrightRed->DarkRed->DarkGray->Black", 
     "Monochrome", "Sepia", "HighContrast", "LowContrast",
     # Материалы и текстуры
+# Материалы и текстуры
+    "Gold", "Silver", "Copper", "Emerald", "Sapphire", "Ruby", "Amethyst",
+    "Steel", "Bronze", "Pearl", "Coral", "Jade", "Topaz",
+    # Специальные и тематические
+    "Ukraine", "Neon", "Cyberpunk", "Retro", "Vintage", "Pastel", "Candy",
+    # Природные цвета
+    "Lime", "Mint", "Peach", "Lavender", "Rose", "Sky", "Sand", "Charcoal", "Clouds", "Flame"
+
     "Gold", "Silver", "Copper", "Emerald", "Sapphire", "Ruby", "Amethyst",
     "Steel", "Bronze", "Pearl", "Coral", "Jade", "Topaz",
     # Специальные и тематические
@@ -133,19 +161,21 @@ HSV_COLOR_PALETTES = [
 PALETTE_OPTIONS = HSV_DESIGN_PALETTES + HSV_COLOR_PALETTES
 
 # Audio processing settings
-SPAWN_BASE, SPAWN_SCALE = 60, 220
+SPAWN_BASE, SPAWN_SCALE = 10, 70
 FREQ_MIN, FREQ_MAX = 72.0, 1500.0
 MIN_NOTE_FREQ = 70.0
-VOLUME_SCALE = 9.0
+VOLUME_SCALE = 8.0
 
 # Default timing and threshold values
 DEFAULT_CLEAR_RMS = 0.004
-DEFAULT_COLOR_RMS_MIN = 0.005
-DEFAULT_COLOR_RMS_MAX = 0.2
-DEFAULT_TICK_MS = 20
+DEFAULT_COLOR_RMS_MIN = 0.004
+DEFAULT_COLOR_RMS_MAX = 0.30
+DEFAULT_TICK_MS = 30
 DEFAULT_PTICK_MIN_MS = 60
-DEFAULT_PTICK_MAX_MS = 120
+DEFAULT_PTICK_MAX_MS = 200
 
+# Audio settings
+CHANNELS = 1
 # Clear types for different clearing methods
 CLEAR_TYPES = [
     "Полная очистка",        # Complete clear - all cells
@@ -157,7 +187,7 @@ CLEAR_TYPES = [
 # Audio globals
 audio_rms = 0.0
 audio_pitch = 0.0
-audio_gain = 1.0
+audio_gain = 0.0
 
 # ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
 
@@ -178,9 +208,9 @@ def get_hsv_color_palettes():
 
 def get_palette_by_category(category: str):
     """Возвращает палитры по категории"""
-    if category == "HSV-дизайны":
+    if category == "Возраст + RMS":
         return HSV_DESIGN_PALETTES
-    elif category == "HSV Палитры":
+    elif category == "Только RMS":
         return HSV_COLOR_PALETTES
     else:
         return PALETTE_OPTIONS
@@ -194,7 +224,8 @@ class Layer:
     def __init__(self, grid, age, rule, age_palette, rms_palette, color_mode,
                  rms_mode="brightness", blend_mode="normal", rms_enabled=True,
                  alpha_live=220, alpha_old=140, max_age=60, mix="Normal",
-                 solo=False, mute=False, palette_mix=0.5, spawn_method="Стабильные блоки"):
+                 solo=False, mute=False, palette_mix=0.5, spawn_method="Стабильные блоки", spawn_percent=100, aging_speed=1.0,
+                 invert_age_palette=False, invert_rms_palette=False):
         self.grid = grid
         self.age = age
         self.rule = rule
@@ -213,61 +244,39 @@ class Layer:
         self.palette_mix = palette_mix
         self.spawn_method = spawn_method
         self.tick_ms = DEFAULT_TICK_MS
-    
+        self.spawn_percent = spawn_percent  # Процент спавна клеток (0-300%)
+        self.aging_speed = aging_speed  # Скорость старения
+        self.invert_age_palette = invert_age_palette  # Инверсия age палитры
+        self.invert_rms_palette = invert_rms_palette  # Инверсия rms палитры
 
-
-# ==================== ПРОСТАЯ ЗАГЛУШКА HUD ====================
-
-class SimpleColors:
-    """Расширенная палитра цветов для современного UI"""
-    PRIMARY = (0, 150, 255)
-    PRIMARY_LIGHT = (100, 180, 255)
-    GRAY_50 = (248, 250, 252)
-    GRAY_100 = (241, 245, 249)
-    GRAY_400 = (156, 163, 175)
-    GRAY_700 = (55, 65, 81)
-    GRAY_800 = (31, 41, 55)
-    GRAY_900 = (17, 24, 39)
-    WHITE = (255, 255, 255)
-    BLACK = (0, 0, 0)
-    
-    # Дополнительные цвета для UI
-    SURFACE = (248, 250, 252)
-    ACTIVE = (219, 234, 254)
-    BORDER = (203, 213, 225)
-    BORDER_FOCUS = (59, 130, 246)
-    TEXT_PRIMARY = (30, 41, 59)
-    TEXT_SECONDARY = (100, 116, 139)
+# ==================== HUD ===================
 
 
 class HUD:
     """Полнофункциональный HUD с модулями настройки слоев"""
-    def __init__(self, font: pygame.font.Font, screen_height: int, layer_count: int = 5):
+    def __init__(self, font: pygame.font.Font, screen_height: int, layer_count: int = 5, enabled: bool = True, smooth_scale: bool = False):
         self.tick_ms = DEFAULT_TICK_MS  # HUD now owns tick interval
         self.font = font
-        self.visible = True
+        self.visible = enabled
         self.mini_held = False
         self.expanded = False
         self.layer_count = min(layer_count, 5)  # Максимум 5 слоев
-        
+        self.enabled = enabled
+        self.smooth_scale = smooth_scale  # параметр включения сглаженного масштабирования
         # Колбэк для изменения параметров
         self.on_parameter_change = None
-        
         # Позиционирование панели
         self.panel_x = GRID_W * CELL_SIZE + 5
         self.panel_y = 5
         self.panel_width = HUD_WIDTH - 10
-        
         # Прокрутка
         self.scroll_y = 0
         self.scroll_dragging = False
         self.scroll_drag_start_y = 0
         self.scroll_thumb_rect = None
-        
         # Модули слоев
         self.layer_modules = []
         self._create_layer_modules()
-        
         # Общие элементы управления
         self.global_controls = []
         self._create_global_controls()
@@ -275,13 +284,7 @@ class HUD:
     def _create_layer_modules(self):
         """Создает модули настройки для каждого слоя"""
         self.layer_modules = []
-        
-        # Доступные опции для выпадающих списков
-        palette_options = [
-            "Fire", "Ocean", "Sunset", "Aurora", "Galaxy", "Rainbow", "Cyberpunk",
-            "Blue->Red", "Blue->Green->Yellow->Red", "White->LightGray->Gray->DarkGray"
-        ]
-        
+        palette_options = PALETTE_OPTIONS
         rule_options = [
             "Conway", "HighLife", "Day&Night", "Replicator", 
             "Seeds", "Maze", "Coral", "LifeWithoutDeath", "Gnarl"
@@ -289,7 +292,16 @@ class HUD:
         
         blend_options = ["normal", "additive", "screen", "multiply", "overlay"]
         rms_mode_options = ["brightness", "palette", "disabled"]
-        spawn_options = ["Стабильные блоки", "Случайные точки", "Линии", "Глайдеры"]
+        spawn_options = [
+            "Стабильные блоки",
+            "Случайные точки",
+            "Глайдеры",
+            "Осцилляторы",
+            "Смешанный",
+            "Линии",
+            "Кресты",
+            "Кольца"
+        ]
         
         module_height = 280  # Высота каждого модуля
         module_spacing = 20   # Отступ между модулями
@@ -304,8 +316,6 @@ class HUD:
     def _create_single_layer_module(self, layer_index, y_offset, palette_options, 
                                    rule_options, blend_options, rms_mode_options, spawn_options):
         """Создает модуль настройки для одного слоя"""
-        print(f"🏗️ Создаем модуль для layer {layer_index}, y_offset={y_offset}")
-        
         module = {
             'layer_index': layer_index,
             'y_offset': y_offset,
@@ -325,10 +335,52 @@ class HUD:
         current_y = y_offset + 30  # Отступ под заголовок
         right_column_y = y_offset + 30  # Отдельный Y для правой колонки
 
+
+        # --- CLEAR PARAMETERS ---"""
+        # Тип очистки (комбобокс)
+        module['controls']['clear_type'] = UIComboBox(
+            x_left, current_y, combo_width, control_height,
+            f"Тип очистки", CLEAR_TYPES, 0
+        )
+        current_y += 40
+
+        # Процент очистки (для частичной/случайной)
+        module['controls']['clear_percent'] = UISlider(
+            x_left, current_y, slider_width, control_height,
+            0, 100, 50, f"% Очистки", "{:.0f}%"
+        )
+        current_y += 40
+
+        # Порог возраста (для возрастной очистки)
+        module['controls']['clear_age_threshold'] = UISlider(
+            x_left, current_y, slider_width, control_height,
+            0, 200, 60, f"Порог возраста", "{:.0f}"
+        )
+        current_y += 40
+
+        # RMS-порог (для RMS-очистки)
+        module['controls']['clear_rms_threshold'] = UISlider(
+            x_left, current_y, slider_width, control_height,
+            0.0, 0.1, DEFAULT_CLEAR_RMS, f"RMS порог", "{:.3f}"
+        )
+        current_y += 40
+
+        # Кнопка очистки слоя
+        module['controls']['clear_now'] = UIButton(
+            x_left, current_y, button_width, control_height,
+            "Очистить слой", is_toggle=False, active=False
+        )
+        current_y += 40
+
         # Age Palette комбобокс (левая)
         module['controls']['age_palette'] = UIComboBox(
             x_left, current_y, combo_width, control_height,
             f"Age Palette", palette_options, 0
+        )
+        # Чекбокс Invert Palette (левая)
+        module['controls']['invert_age_palette'] = UIButton(
+            x_left + combo_width + 10, current_y, 28, control_height,
+            "⮂", is_toggle=True, active=False
         )
         current_y += 30
 
@@ -337,26 +389,63 @@ class HUD:
             x_right, right_column_y, combo_width, control_height,
             f"RMS Palette", palette_options, 1
         )
+        # Чекбокс Invert Palette (правая)
+        module['controls']['invert_rms_palette'] = UIButton(
+            x_right + combo_width + 10, right_column_y, 28, control_height,
+            "⮂", is_toggle=True, active=False
+        )
         right_column_y += 30
 
-        # Alpha Live слайдер (левая)
-        module['controls']['alpha_live'] = UISlider(
+        # Fade Start слайдер (левая)
+        module['controls']['fade_start'] = UISlider(
             x_left, current_y, slider_width, control_height,
-            0, 255, 220, f"Alpha Live", "{:.0f}"
+            0, 200, 60, f"Fade Start", "{:.0f}"
         )
         current_y += 30
 
-        # Initial Cells слайдер (правая)
-        module['controls']['initial_cells'] = UISlider(
+        # Aging Speed слайдер (левая)
+        module['controls']['aging_speed'] = UISlider(
+            x_left, current_y, slider_width, control_height,
+            1.0, 5.0, 1000.0, f"Aging Speed", "{:.2f}"
+        )
+        current_y += 30
+
+        # Alpha Live слайдер (левая)
+        # Soft Kill (%)
+        module['controls']['soft_kill'] = UISlider(
+            x_left, current_y, slider_width, control_height,
+            0, 100, 80, f"Soft Kill (%)", "{:.0f}"
+        )
+        current_y += 30
+
+        # Fade Floor
+        module['controls']['fade_floor'] = UISlider(
+            x_left, current_y, slider_width, control_height,
+            0.0, 1.0, 0.6, f"Fade Floor", "{:.2f}"
+        )
+        current_y += 30
+
+        # Age Bias (%)
+        module['controls']['age_bias'] = UISlider(
+            x_left, current_y, slider_width, control_height,
+            0, 100, 10, f"Age Bias (%)", "{:.0f}"
+        )
+        current_y += 30
+        module['controls']['alpha_live'] = UISlider(
+            x_left, current_y, slider_width, control_height,
+            0, 255, 220, f"Alpha Live (Layer)", "{:.0f}"
+        )
+        current_y += 30
+
+        module['controls']['spawn_percent'] = UISlider(
             x_right, right_column_y, 100, control_height,
-            0, 100, 30, f"Spawn %", "{:.0f}%"
+            0, 300, 100, f"SPAWN SCALE", "{:.0f}%"
         )
         right_column_y += 30
 
-        # Alpha Old слайдер (левая)
         module['controls']['alpha_old'] = UISlider(
             x_left, current_y, slider_width, control_height,
-            0, 255, 140, f"Alpha Old", "{:.0f}"
+            0, 255, 140, f"Alpha Old (Layer)", "{:.0f}"
         )
         current_y += 30
 
@@ -380,7 +469,6 @@ class HUD:
             0.0, 1.0, 0.5, f"Palette Mix", "{:.2f}"
         )
         module['controls']['palette_mix'] = palette_mix_slider
-        print(f"🎯 Palette Mix создан: x={palette_mix_slider.x}, y={palette_mix_slider.y}, width={palette_mix_slider.width}")
         right_column_y += 30
 
         # Rule комбобокс (левая)
@@ -431,12 +519,46 @@ class HUD:
             slider_x, slider_y, slider_width, slider_height,
             5, 100, self.tick_ms, "Tick (ms)", "{:.0f} ms"
         )
-        self.global_controls = [self.global_tick_slider]
+        self.btn_all = UIButton(self.panel_x + self.panel_width - 70, self.panel_y + 10, 60, 25, "ALL", is_toggle=True, active=True)
+        self.global_controls = [self.btn_all, self.global_tick_slider]
     
     def handle_event(self, event):
         """Обработка событий для всех элементов HUD"""
         if not self.visible:
             return False
+        # --- Scrollbar interactions ---
+        # Mouse wheel scroll over the HUD panel
+        if event.type == pygame.MOUSEWHEEL:
+            pos = getattr(event, 'pos', pygame.mouse.get_pos())
+            if self._is_mouse_over_panel(pos):
+                self.scroll_y -= event.y * 30
+                self._clamp_scroll()
+                return True
+        # Drag the scrollbar thumb
+        if event.type == pygame.MOUSEBUTTONDOWN and getattr(event, 'button', 1) == 1:
+            pos = getattr(event, 'pos', pygame.mouse.get_pos())
+            if self.scroll_thumb_rect and self.scroll_thumb_rect.collidepoint(pos):
+                self.scroll_dragging = True
+                self.scroll_drag_start_y = pos[1] - self.scroll_thumb_rect.y
+                return True
+        if event.type == pygame.MOUSEMOTION and self.scroll_dragging:
+            pos = getattr(event, 'pos', pygame.mouse.get_pos())
+            scrollbar_y = self.panel_y + 60
+            scrollbar_h = 600 - 60
+            total_h = len(self.layer_modules) * 300
+            if total_h > scrollbar_h and self.scroll_thumb_rect is not None:
+                thumb_h = self.scroll_thumb_rect.height
+                new_thumb_y = max(scrollbar_y, min(scrollbar_y + scrollbar_h - thumb_h, pos[1] - self.scroll_drag_start_y))
+                self.scroll_thumb_rect.y = new_thumb_y
+                # Map thumb position back to scroll_y
+                denom = (scrollbar_h - thumb_h) if (scrollbar_h - thumb_h) > 0 else 1
+                self.scroll_y = -int((new_thumb_y - scrollbar_y) * (total_h - scrollbar_h) / denom)
+                self._clamp_scroll()
+            return True
+        if event.type == pygame.MOUSEBUTTONUP and self.scroll_dragging:
+            self.scroll_dragging = False
+            return True
+
         # Обработка глобального слайдера
         if hasattr(self, 'global_tick_slider'):
             if self.global_tick_slider.handle_event(event):
@@ -445,6 +567,17 @@ class HUD:
                 if hasattr(self, 'app') and hasattr(self.app, 'on_global_tick_ms_change'):
                     self.app.on_global_tick_ms_change(self.tick_ms)
                 return True
+        # Кнопка ALL
+        if hasattr(self, 'btn_all') and self.btn_all.handle_event(event):
+            if hasattr(self, 'app') and hasattr(self.app, 'layers'):
+                state = self.btn_all.active
+                for layer in self.app.layers:
+                    layer.mute = not state
+                # обновить HUD
+                if hasattr(self, 'update_from_app'):
+                    self.update_from_app(self.app)
+            return True
+
         # Обработка прокрутки
         if event.type == pygame.MOUSEWHEEL:
             if hasattr(event, 'pos') and self._is_mouse_over_panel(event.pos):
@@ -495,15 +628,35 @@ class HUD:
         self.scroll_y = max(-max_scroll, min(0, self.scroll_y))
     
     def update_from_app(self, app):
+
         """Обновляет значения UI элементов из состояния приложения"""
         if not hasattr(app, 'layers') or len(app.layers) == 0:
-            return
+            return # Нет слоев для обновления
+        
+        # Обновляем каждый модуль слоя
+        for i, module in enumerate(self.layer_modules):
+            if i > 0:
+                module['visible'] = False
+            else:
+                module['visible'] = True
+            if i >= len(app.layers):
+                break
+            layer = app.layers[i]
+            controls = module['controls']
+            # Обновляем чекбоксы инверсии палитр
+            if 'invert_age_palette' in controls:
+                controls['invert_age_palette'].active = getattr(layer, 'invert_age_palette', False)
+            if 'invert_rms_palette' in controls:
+                controls['invert_rms_palette'].active = getattr(layer, 'invert_rms_palette', False)
             
         # Обновляем каждый модуль слоя
         for i, module in enumerate(self.layer_modules):
+            if i > 0:
+                module['visible'] = False
+            else:
+                module['visible'] = True
             if i >= len(app.layers):
                 break
-                
             layer = app.layers[i]
             controls = module['controls']
             
@@ -528,10 +681,12 @@ class HUD:
             if 'alpha_old' in controls:
                 controls['alpha_old'].current_val = getattr(layer, 'alpha_old', 140)
             if 'max_age' in controls:
-                layer_max_age = getattr(layer, 'max_age', 60)
-                controls['max_age'].current_val = max_age_value_to_slider(layer_max_age)
+                layer.max_age = getattr(layer, 'max_age', 60)
+                controls['max_age'].current_val = max_age_value_to_slider(layer.max_age)
             if 'palette_mix' in controls:
                 controls['palette_mix'].current_val = getattr(layer, 'palette_mix', 0.5)
+            if 'aging_speed' in controls:
+                controls['aging_speed'].current_val = getattr(layer, 'aging_speed', 10.0)
             
             # Обновляем комбобоксы
             if 'rule' in controls:
@@ -570,7 +725,6 @@ class HUD:
     
     def update_callbacks(self):
         """Обновляет колбэки для всех UI элементов"""
-        # Метод для совместимости с существующим кодом
         pass
     
     def draw(self, surface, info=None):
@@ -589,6 +743,10 @@ class HUD:
         # Глобальный слайдер Tick (ms)
         if hasattr(self, 'global_tick_slider'):
             self.global_tick_slider.draw(surface, self.font)
+        # Кнопка ALL (включить/выключить все слои)
+        if hasattr(self, 'btn_all'):
+            self.btn_all.draw(surface, self.font)
+
         # Краткая информация
         if info:
             info_text = f"Layers: {info.get('Layers', 0)} | Cells: {info.get('Alive', '0 cells')}"
@@ -598,8 +756,9 @@ class HUD:
         clip_rect = pygame.Rect(self.panel_x, self.panel_y + 60, self.panel_width, panel_height - 60)
         surface.set_clip(clip_rect)
         open_dropdowns = []
-        for module in self.layer_modules:
-            open_dropdowns.extend(self._draw_layer_module(surface, module, collect_dropdowns=True))
+        # Отрисовываем только первый модуль слоя
+        if self.layer_modules:
+            open_dropdowns.extend(self._draw_layer_module(surface, self.layer_modules[0], collect_dropdowns=True))
         surface.set_clip(None)
         for dropdown_info in open_dropdowns:
             control, original_y = dropdown_info
@@ -931,7 +1090,6 @@ try:
     import pygame
 except ImportError as e:
     raise SystemExit("pygame is required. Install with: pip install pygame") from e
-
 # Дополнительные внешние зависимости (необязательные)
 try:
     import sounddevice as sd
@@ -950,21 +1108,6 @@ except ImportError:
     tk = None
     ttk = None 
     filedialog = None
-
-# === CONSTANTS AND CONFIGURATION ===
-
-# Audio settings
-SAMPLE_RATE = 44100
-BLOCK_SIZE = 2048
-CHANNELS = 1
-FPS = 60
-
-# Grid and display settings
-GRID_W, GRID_H = 120, 70
-CELL_SIZE = 8
-BG_COLOR = (10, 10, 12)
-HUD_WIDTH = 520
-FIELD_OFFSET_X = 0
 
 # Cellular automaton rules
 CA_RULES = [
@@ -1024,7 +1167,7 @@ def get_hsv_color_palettes():
 
 def get_palette_by_category(category: str = "all"):
     """Возвращает палитры по категории с кэшированием"""
-    if category == "HSV-дизайны" or category == "HSV Палитры":
+    if category == "Возраст + RMS" or category == "Только RMS":
         return PALETTE_NAMES
     elif category in PALETTE_CATEGORIES:
         return PALETTE_CATEGORIES[category]
@@ -1032,10 +1175,10 @@ def get_palette_by_category(category: str = "all"):
         return PALETTE_NAMES
 
 # Audio processing settings
-SPAWN_BASE, SPAWN_SCALE = 1, 360  # Уменьшено для меньшего количества клеток
+SPAWN_BASE, SPAWN_SCALE = 20, 40  # Уменьшено для меньшего количества клеток
 FREQ_MIN, FREQ_MAX = 70.0, 1500.0
 MIN_NOTE_FREQ = 60.0
-VOLUME_SCALE = 8.0  # Уменьшено для более мягкой реакции на звук
+VOLUME_SCALE = 9.0  # Уменьшено для более мягкой реакции на звук
 
 # Default timing and threshold values
 DEFAULT_CLEAR_RMS = 0.004
@@ -1044,14 +1187,6 @@ DEFAULT_COLOR_RMS_MAX = 0.30
 DEFAULT_TICK_MS = 60
 DEFAULT_PTICK_MIN_MS = 60
 DEFAULT_PTICK_MAX_MS = 200
-
-# Clear types for different clearing methods
-CLEAR_TYPES = [
-    "Полная очистка",        # Complete clear - all cells
-    "Частичная очистка",     # Partial clear - percentage
-    "Очистка по возрасту",   # Age-based clear - old cells
-    "Случайная очистка"      # Random clear - random cells
-]
 
 # Pitch-based coloring
 PITCH_COLOR_MIN_HZ = 72.0
@@ -1082,7 +1217,7 @@ def lerp(a: float, b: float, t: float) -> float:
 
 # Кэш для дорогих вычислений
 from functools import lru_cache
-import weakref
+# import weakref
 
 # Оптимизация памяти для NumPy массивов
 def _create_optimized_grid(height: int, width: int) -> np.ndarray:
@@ -1121,38 +1256,49 @@ def _cached_age_to_t(age: int, max_age: int) -> float:
 def _cached_palette_hsv(palette_name: str, t: float) -> tuple[float, float, float]:
     """Кэшированная генерация HSV для палитр"""
     t = clamp01(t)
-    
-    if palette_name == "FIRE":
-        return hue_fire_from_t(t)
-    elif palette_name == "OCEAN":
-        return hue_ocean_from_t(t)
-    elif palette_name == "NEON":
-        return hue_neon_from_t(t)
-    elif palette_name == "UKRAINE":
-        return hue_ukraine_from_t(t)
-    elif palette_name == "RAINBOWSMOOTH":
-        return hue_rainbow_smooth_from_t(t)
-    elif palette_name == "SUNSET":
-        return hue_sunset_from_t(t)
-    elif palette_name == "AURORA":
-        return hue_aurora_from_t(t)
-    elif palette_name == "GALAXY":
-        return hue_galaxy_from_t(t)
-    elif palette_name == "TROPICAL":
-        return hue_tropical_from_t(t)
-    elif palette_name == "VOLCANO":
-        return hue_volcano_from_t(t)
-    elif palette_name == "DEEPSEA":
-        return hue_deepsea_from_t(t)
-    elif palette_name == "CYBERPUNK":
-        return hue_cyberpunk_from_t(t)
-    elif palette_name == "BGYR":
-        hue = hue_bgyr_from_t(t)
-        return (hue, 0.85, 1.0)
-    else:
-        # Default fallback
-        hue = hue_bgyr_from_t(t)
-        return (hue, 0.85, 1.0)
+    PALETTE_FUNCTIONS = {
+        "FIRE": hue_fire_from_t,
+        "OCEAN": hue_ocean_from_t,
+        "NEON": hue_neon_from_t,
+        "UKRAINE": hue_ukraine_from_t,
+        "RAINBOWSMOOTH": hue_rainbow_smooth_from_t,
+        "SUNSET": hue_sunset_from_t,
+        "AURORA": hue_aurora_from_t,
+        "GALAXY": hue_galaxy_from_t,
+        "TROPICAL": hue_tropical_from_t,
+        "VOLCANO": hue_volcano_from_t,
+        "DEEPSEA": hue_deepsea_from_t,
+        "CYBERPUNK": hue_cyberpunk_from_t,
+        "BGYR": lambda t: (hue_bgyr_from_t(t), 0.85, 1.0),
+        "SPRING": hue_spring_from_t,
+        "SUMMER": hue_summer_from_t,
+        "AUTUMN": hue_autumn_from_t,
+        "WINTER": hue_winter_from_t,
+        "ICE": hue_ice_from_t,
+        "FOREST": hue_forest_from_t,
+        "DESERT": hue_desert_from_t,
+        "VIRIDIS": hue_viridis_from_t,
+        "INFERNO": hue_inferno_from_t,
+        "MAGMA": hue_magma_from_t,
+        "PLASMA": hue_plasma_from_t,
+        "CIVIDIS": hue_cividis_from_t,
+        "TWILIGHT": hue_twilight_from_t,
+        "GOLD": hue_gold_from_t,
+        "SILVER": hue_silver_from_t,
+        "COPPER": hue_copper_from_t,
+        "EMERALD": hue_emerald_from_t,
+        "SAPPHIRE": hue_sapphire_from_t,
+        "RUBY": hue_ruby_from_t,
+        "AMETHYST": hue_amethyst_from_t,
+        "SEPIA": hue_sepia_from_t
+    # Добавьте остальные палитры по аналогии
+    }
+    func = PALETTE_FUNCTIONS.get(palette_name.upper())
+    if func:
+        return func(t)
+    # Default fallback
+    hue = hue_bgyr_from_t(t)
+    return (hue, 0.85, 1.0)
 
 def blend_colors(color1: Tuple[int, int, int], color2: Tuple[int, int, int], 
                 factor: float, blend_mode: str = "normal") -> Tuple[int, int, int]:
@@ -1199,11 +1345,11 @@ def blend_colors(color1: Tuple[int, int, int], color2: Tuple[int, int, int],
     elif blend_mode == "overlay":
         # Overlay blend mode
         def overlay_channel(base, overlay, factor):
-            overlay = overlay * factor
+            scaled_overlay = overlay * factor
             if base < 128:
-                return int(2 * base * overlay / 255)
+                return int(2 * base * scaled_overlay / 255)
             else:
-                return int(255 - 2 * (255 - base) * (255 - overlay) / 255)
+                return int(255 - 2 * (255 - base) * (255 - scaled_overlay) / 255)
         
         r = int(lerp(r1, overlay_channel(r1, r2, factor), factor))
         g = int(lerp(g1, overlay_channel(g1, g2, factor), factor))
@@ -1227,7 +1373,144 @@ def hue_bgyr_from_t(t: float) -> float:
 def hue_br_from_t(t: float) -> float:
     return lerp(220.0, 0.0, clamp01(t))
 
-# расширенные палитры (HSV-дизайнеры)
+# расширенные палитры (Возраст + RMS)
+# === Материальные палитры ===
+def hue_bronze_from_t(t: float) -> tuple[float, float, float]:
+    # Бронза: коричнево-оранжевый переход
+    t = clamp01(t)
+    hue = 30.0 + 15.0 * t  # 30 (коричневый) -> 45 (оранжевый)
+    sat = 0.7 + 0.1 * t
+    val = 0.7 + 0.2 * t
+    return (hue, sat, val)
+
+def hue_pearl_from_t(t: float) -> tuple[float, float, float]:
+    # Жемчуг: бело-розовый переход
+    t = clamp01(t)
+    hue = 0.0 + 10.0 * t  # 0 (белый) -> 10 (розоватый)
+    sat = 0.05 + 0.15 * t
+    val = 1.0 - 0.1 * t
+    return (hue, sat, val)
+
+def hue_coral_from_t(t: float) -> tuple[float, float, float]:
+    # Коралл: розово-оранжевый переход
+    t = clamp01(t)
+    hue = 10.0 + 20.0 * t  # 10 (розовый) -> 30 (оранжевый)
+    sat = 0.8 - 0.1 * t
+    val = 0.9 - 0.1 * t
+    return (hue, sat, val)
+
+def hue_jade_from_t(t: float) -> tuple[float, float, float]:
+    # Нефрит: зеленый переход
+    t = clamp01(t)
+    hue = 140.0 + 20.0 * t  # 140 (зеленый) -> 160 (сине-зеленый)
+    sat = 0.7 + 0.1 * t
+    val = 0.8 + 0.1 * t
+    return (hue, sat, val)
+
+def hue_topaz_from_t(t: float) -> tuple[float, float, float]:
+    # Топаз: желто-голубой переход
+    t = clamp01(t)
+    hue = 50.0 + 70.0 * t  # 50 (желтый) -> 120 (голубой)
+    sat = 0.7 + 0.2 * t
+    val = 0.9 - 0.1 * t
+    return (hue, sat, val)
+def hue_gold_from_t(t: float) -> tuple[float, float, float]:
+    # Золотой: желто-оранжевый переход (hue в градусах: 47 -> 72)
+    t = clamp01(t)
+    hue = 47.0 + 25.0 * t  # 47 (желтый) -> 72 (оранжевый)
+    sat = 0.85 - 0.15 * t
+    val = 1.0 - 0.1 * t
+    return (hue, sat, val)
+
+def hue_silver_from_t(t: float) -> tuple[float, float, float]:
+    # Серебро: бело-серый переход
+    # hue is fixed at 0.0 for grayscale; saturation increases slightly with t to add a subtle tint,
+    # and value decreases to create a transition from bright silver to darker gray.
+    t = clamp01(t)
+    hue = 0.0
+    sat = 0.0 + 0.05 * t
+    val = 1.0 - 0.3 * t
+    return (hue, sat, val)
+
+def hue_copper_from_t(t: float) -> tuple[float, float, float]:
+    # Медь: красно-оранжевый переход (hue в градусах: 18 -> 36)
+    t = clamp01(t)
+    hue = 18.0 + 18.0 * t  # 18 (оранжевый) -> 36 (красно-оранжевый)
+    sat = 0.8 - 0.1 * t
+    val = 0.9 - 0.2 * t
+    return (hue, sat, val)
+
+def hue_emerald_from_t(t: float) -> tuple[float, float, float]:
+    # Изумруд: зеленый переход
+    t = clamp01(t)
+    hue = (0.33 + 0.07 * t) * 360.0  # 0.33 (зеленый) -> 0.40 (сине-зеленый) in degrees
+    sat = 0.85 - 0.1 * t
+    val = 1.0 - 0.1 * t
+    return (hue, sat, val)
+
+def hue_sapphire_from_t(t: float) -> tuple[float, float, float]:
+    # Сапфир: синий переход
+    t = clamp01(t)
+    hue = (0.58 + 0.07 * t) * 360.0  # 0.58 (синий) -> 0.65 (фиолетово-синий), converted to degrees
+    sat = 0.85 - 0.1 * t
+    val = 1.0 - 0.1 * t
+    return (hue, sat, val)
+
+def hue_ruby_from_t(t: float) -> tuple[float, float, float]:
+    # Рубин: красно-розовый переход
+    t = clamp01(t)
+    hue = (0.97 - 0.07 * t) * 360.0  # 0.97 (красный) -> 0.90 (розовый), now in degrees
+    sat = 0.85 - 0.1 * t
+    val = 1.0 - 0.1 * t
+    return (hue, sat, val)
+
+def hue_amethyst_from_t(t: float) -> tuple[float, float, float]:
+    # Аметист: фиолетовый переход (hue в градусах: 273.6 -> 298.8)
+    t = clamp01(t)
+    hue = (0.76 + 0.07 * t) * 360.0  # 0.76 (фиолетовый) -> 0.83 (сине-фиолетовый) in degrees
+    sat = 0.85 - 0.1 * t
+    val = 1.0 - 0.1 * t
+    return (hue, sat, val)
+
+def hue_sepia_from_t(t: float) -> tuple[float, float, float]:
+    """
+    Sepia palette: brownish-yellow gradient.
+    Hue is fixed at 30 (brown-yellow), saturation and value decrease with t.
+    """
+    t = clamp01(t)
+    h = 30.0
+    s = lerp(0.5, 0.2, t)
+    v = lerp(0.9, 0.6, t)
+    return h, s, v
+
+def hue_grayscale_from_t(t: float) -> tuple:
+    t = clamp01(t)
+    # Градиент от белого к черному
+    h = 0.0
+    s = 0.0
+    v = 1.0 - t
+    return h, s, v
+
+def hue_red_darkred_gray_black_from_t(t: float) -> tuple:
+    t = clamp01(t)
+    # Красный -> темно-красный -> серый -> черный
+    if t < 0.33:
+        # Красный к темно-красному
+        h = 0.0
+        s = 1.0
+        v = 1.0 - t * 0.5
+    elif t < 0.66:
+        # Темно-красный к серому
+        h = 0.0
+        s = 0.5 - (t-0.33)*1.5
+        v = 0.5 - (t-0.33)*0.5
+    else:
+        # Серый к черному
+        h = 0.0
+        s = 0.0
+        v = 0.5 - (t-0.66)*1.5
+    return h, s, v
+
 def hue_fire_from_t(t: float) -> Tuple[float, float, float]:
     t = clamp01(t)
     if t < 0.25:
@@ -1267,7 +1550,126 @@ def hue_ukraine_from_t(t: float) -> Tuple[float, float, float]:
         k = (t-0.5)/0.5; h = lerp(50.0, 220.0, k); s = lerp(0.6, 1.0, k); v = lerp(1.0, 0.9, k)
     return h, s, v
 
-# Расширенные HSV палитры
+# Расширенные палитры (Возраст + RMS, Только RMS)
+def hue_spring_from_t(t: float) -> tuple:
+    t = clamp01(t)
+    # Зеленый -> желтый -> розовый
+    if t < 0.5:
+        h = 90 + t * 60  # 90-120 (зел) -> 150 (желт)
+        s = 0.8 + 0.2 * t
+        v = 0.8 + 0.2 * t
+    else:
+        h = 150 + (t-0.5)*120  # 150-210 (розовый)
+        s = 1.0
+        v = 1.0
+    return h, s, v
+
+def hue_summer_from_t(t: float) -> tuple:
+    t = clamp01(t)
+    # Желтый -> оранжевый -> красный
+    h = 50 + t * 40  # 50-90
+    s = 1.0
+    v = 1.0
+    return h, s, v
+
+def hue_autumn_from_t(t: float) -> tuple:
+    t = clamp01(t)
+    # Оранжевый -> коричневый -> красный
+    h = 30 + t * 30  # 30-60
+    s = 0.7 + 0.3 * t
+    v = 0.7 + 0.3 * (1-t)
+    return h, s, v
+
+def hue_winter_from_t(t: float) -> tuple:
+    t = clamp01(t)
+    # Голубой -> синий -> белый
+    if t < 0.7:
+        h = 180 + t * 60  # 180-222
+        s = 0.5 + 0.5 * (1-t)
+        v = 0.8 + 0.2 * t
+    else:
+        h = 222
+        s = 0.2
+        v = 1.0
+    return h, s, v
+
+def hue_ice_from_t(t: float) -> tuple:
+    t = clamp01(t)
+    # Голубой -> белый
+    h = 190 + t * 20
+    s = 0.3 + 0.7 * (1-t)
+    v = 0.9 + 0.1 * t
+    return h, s, v
+
+def hue_forest_from_t(t: float) -> tuple:
+    t = clamp01(t)
+    # Зеленый -> темно-зеленый
+    h = 120 + t * 30
+    s = 0.7 + 0.3 * (1-t)
+    v = 0.6 + 0.4 * t
+    return h, s, v
+
+def hue_desert_from_t(t: float) -> tuple:
+    t = clamp01(t)
+    # Песочный -> желтый -> светло-коричневый
+    h = 40 + t * 20
+    s = 0.6 + 0.4 * (1-t)
+    v = 0.9
+    return h, s, v
+
+def hue_viridis_from_t(t: float) -> tuple:
+    t = clamp01(t)
+    # Зеленый -> синий -> желтый
+    if t < 0.5:
+        h = 90 + t * 60  # 90-120
+        s = 1.0
+        v = 0.8 + 0.2 * t
+    else:
+        h = 120 + (t-0.5)*120  # 120-180
+        s = 1.0
+        v = 1.0
+    return h, s, v
+
+def hue_inferno_from_t(t: float) -> tuple:
+    t = clamp01(t)
+    # Темно-красный -> оранжевый -> желтый
+    h = 10 + t * 50
+    s = 1.0
+    v = 0.7 + 0.3 * t
+    return h, s, v
+
+def hue_magma_from_t(t: float) -> tuple:
+    t = clamp01(t)
+    # Фиолетовый -> красный -> желтый
+    h = 300 - t * 120
+    s = 1.0
+    v = 0.7 + 0.3 * t
+    return h, s, v
+
+def hue_plasma_from_t(t: float) -> tuple:
+    t = clamp01(t)
+    # Синий -> фиолетовый -> желтый
+    h = 240 + t * 60
+    s = 1.0
+    v = 0.8 + 0.2 * t
+    return h, s, v
+
+def hue_cividis_from_t(t: float) -> tuple:
+    t = clamp01(t)
+    # Зеленый -> желтый -> коричневый
+    h = 90 + t * 60
+    s = 0.8 + 0.2 * t
+    v = 0.7 + 0.3 * (1-t)
+    return h, s, v
+
+def hue_twilight_from_t(t: float) -> tuple:
+    t = clamp01(t)
+    # Синий -> фиолетовый -> розовый
+    h = 240 + t * 60
+    s = 0.7 + 0.3 * t
+    v = 0.8 + 0.2 * (1-t)
+    return h, s, v
+
 def hue_rainbow_smooth_from_t(t: float) -> Tuple[float, float, float]:
     """Плавная радужная палитра через весь спектр HSV"""
     t = clamp01(t)
@@ -1467,6 +1869,17 @@ def hue_cyberpunk_from_t(t: float) -> Tuple[float, float, float]:
         v = 1.0
     return h, s, v
 
+def hue_sepia_from_t(t: float) -> tuple[float, float, float]:
+    """
+    Sepia palette: brownish-yellow gradient.
+    Hue is fixed at 30 (brown-yellow), saturation and value decrease with t.
+    """
+    t = clamp01(t)
+    h = 30.0
+    s = lerp(0.5, 0.2, t)
+    v = lerp(0.9, 0.6, t)
+    return h, s, v
+
 class PaletteState:
     def __init__(self):
         self.hue_offset = 0.0
@@ -1524,19 +1937,49 @@ _PALETTE_ALIASES = {
     "Tropical": "TROPICAL",
     "Volcano": "VOLCANO",
     "DeepSea": "DEEPSEA",
-    "Spring": "FIRE",      # Временно используем похожие палитры
-    "Summer": "SUNSET",
-    "Autumn": "VOLCANO",
-    "Winter": "OCEAN",
-    "Ice": "OCEAN",
-    "Forest": "TROPICAL",
-    "Desert": "SUNSET",
-    "Viridis": "OCEAN",    # Научные палитры временно
-    "Inferno": "FIRE",
-    "Magma": "VOLCANO",
-    "Plasma": "NEON",
-    "Cividis": "OCEAN",
-    "Twilight": "AURORA",
+    "Spring": "SPRING",        # Теперь уникальная палитра
+    "Summer": "SUMMER",
+    "Autumn": "AUTUMN",
+    "Winter": "WINTER",
+    "Ice": "ICE",
+    "Forest": "FOREST",
+    "Desert": "DESERT",
+    "Viridis": "VIRIDIS",      # Теперь уникальная палитра
+    "Inferno": "INFERNO",
+    "Magma": "MAGMA",
+    "Plasma": "PLASMA",
+    "Cividis": "CIVIDIS",
+    "Twilight": "TWILIGHT",
+    "Gold": "GOLD",
+    "Silver": "SILVER",
+    "Copper": "COPPER",
+    "Emerald": "EMERALD",
+    "Sapphire": "SAPPHIRE",
+    "Ruby": "RUBY",
+    "Amethyst": "AMETHYST",
+    "Steel": "STEEL",
+    "Bronze": "BRONZE",
+    "Pearl": "PEARL",
+    "Coral": "CORAL",
+    "Jade": "JADE",
+    "Topaz": "TOPAZ",
+    "Ukraine": "UKRAINE",
+    "Neon": "NEON",
+    "Cyberpunk": "CYBERPUNK",
+    "Retro": "RETRO",
+    "Vintage": "VINTAGE",
+    "Pastel": "PASTEL",
+    "Candy": "CANDY",
+    "Lime": "LIME",
+    "Mint": "MINT",
+    "Peach": "PEACH",
+    "Lavender": "LAVENDER",
+    "Rose": "ROSE",
+    "Sky": "SKY",
+    "Sand": "SAND",
+    "Charcoal": "CHARCOAL",
+    "Clouds": "CLOUDS",
+    "Flame": "FLAME",
     
     # Базовые названия
     "Neon": "NEON",
@@ -1545,7 +1988,7 @@ _PALETTE_ALIASES = {
     
     # HSV цветовые палитры
     "Monochrome": "GRAYSCALE",
-    "Sepia": "GRAYSCALE",
+    "Sepia": "SEPIA",
     "HighContrast": "RED_DARKRED_GRAY_BLACK",
     "LowContrast": "GRAYSCALE",
 }
@@ -1668,8 +2111,16 @@ def color_from_age_rms(age: int, rms: float, rms_strength: float,
     a = min(age, max_age if max_age > 0 else age)
     t_age_raw = age_to_t(a, max_age if max_age > 0 else max(12, a+1))
     t_age = maybe_invert_t(t_age_raw)
+    # Инверсия age_palette
+    if hasattr(locals().get('layer', None), 'invert_age_palette'):
+        if getattr(locals()['layer'], 'invert_age_palette', False):
+            t_age = 1.0 - t_age
 
     t_rms = norm_rms_for_color(rms, color_rms_min, color_rms_max)
+    # Инверсия rms_palette
+    if hasattr(locals().get('layer', None), 'invert_rms_palette'):
+        if getattr(locals()['layer'], 'invert_rms_palette', False):
+            t_rms = 1.0 - t_rms
     strength = clamp01(rms_strength)
 
     # Если RMS отключена, используем только возрастную палитру
@@ -1709,15 +2160,326 @@ def color_from_age_rms(age: int, rms: float, rms_strength: float,
 def color_from_age_only(age: int, fade_start: int, max_age: int,
                        sat_drop_pct: float, val_drop_pct: float,
                        global_v_mul: float, age_palette: str) -> Tuple[int,int,int]:
-    
-    """Генерирует цвет только на основе возраста клетки."""
+    # ...existing code...
     a = min(age, max_age if max_age > 0 else age)
     t_age_raw = age_to_t(a, max_age if max_age > 0 else max(12, a+1))
     t_age = maybe_invert_t(t_age_raw)
-    
+    # Инверсия age_palette
+    if hasattr(locals().get('layer', None), 'invert_age_palette'):
+        if getattr(locals()['layer'], 'invert_age_palette', False):
+            t_age = 1.0 - t_age
+
     pal = palette_key(age_palette)
+
+    # --- МАТЕРИАЛЫ ---
+    if pal == "GOLD":
+        h,s,v = hue_gold_from_t(t_age); h = apply_hue_offset(h)
+        v *= clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "SILVER":
+        h,s,v = hue_silver_from_t(t_age); h = apply_hue_offset(h)
+        v *= clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "COPPER":
+        h,s,v = hue_copper_from_t(t_age); h = apply_hue_offset(h)
+        v *= clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "EMERALD":
+        h,s,v = hue_emerald_from_t(t_age); h = apply_hue_offset(h)
+        v *= clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "SAPPHIRE":
+        h,s,v = hue_sapphire_from_t(t_age); h = apply_hue_offset(h)
+        v *= clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "RUBY":
+        h,s,v = hue_ruby_from_t(t_age); h = apply_hue_offset(h)
+        v *= clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "AMETHYST":
+        h,s,v = hue_amethyst_from_t(t_age); h = apply_hue_offset(h)
+        v *= clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "STEEL":
+        # Можно использовать оттенок серого с небольшим синим
+        h,s,v = 210.0, 0.08, 0.85
+        h = apply_hue_offset(h)
+        v *= clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "BRONZE":
+        h,s,v = hue_bronze_from_t(t_age); h = apply_hue_offset(h)
+        v *= clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "PEARL":
+        h,s,v = hue_pearl_from_t(t_age); h = apply_hue_offset(h)
+        v *= clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "CORAL":
+        h,s,v = hue_coral_from_t(t_age); h = apply_hue_offset(h)
+        v *= clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "JADE":
+        h,s,v = hue_jade_from_t(t_age); h = apply_hue_offset(h)
+        v *= clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "TOPAZ":
+        h,s,v = hue_topaz_from_t(t_age); h = apply_hue_offset(h)
+        v *= clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+
+    # --- СПЕЦИАЛЬНЫЕ И ТЕМАТИЧЕСКИЕ ---
+    elif pal == "UKRAINE":
+        h,s,v = hue_ukraine_from_t(t_age); h = apply_hue_offset(h)
+        v *= clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "NEON":
+        h,s,v = hue_neon_from_t(t_age); h = apply_hue_offset(h)
+        v *= clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "CYBERPUNK":
+        h,s,v = hue_cyberpunk_from_t(t_age); h = apply_hue_offset(h)
+        v *= clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "RETRO":
+        # Пример: желто-оранжево-коричневая гамма
+        h = lerp(40.0, 20.0, t_age)
+        s = lerp(0.9, 0.7, t_age)
+        v = lerp(1.0, 0.6, t_age) * clamp01(global_v_mul)
+        h = apply_hue_offset(h)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "VINTAGE":
+        # Пример: сепия
+        h = 30.0
+        s = lerp(0.5, 0.2, t_age)
+        v = lerp(0.9, 0.6, t_age) * clamp01(global_v_mul)
+        h = apply_hue_offset(h)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "PASTEL":
+        # Пример: пастельные тона
+        h = lerp(320.0, 60.0, t_age)
+        s = lerp(0.4, 0.2, t_age)
+        v = lerp(1.0, 0.85, t_age) * clamp01(global_v_mul)
+        h = apply_hue_offset(h)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "CANDY":
+        # Пример: ярко-розовые и голубые
+        h = lerp(330.0, 200.0, t_age)
+        s = lerp(0.9, 0.7, t_age)
+        v = lerp(1.0, 0.9, t_age) * clamp01(global_v_mul)
+        h = apply_hue_offset(h)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+
+    # --- ПРИРОДНЫЕ ЦВЕТА ---
+    elif pal == "LIME":
+        h = 75.0
+        s = lerp(0.9, 0.7, t_age)
+        v = lerp(1.0, 0.8, t_age) * clamp01(global_v_mul)
+        h = apply_hue_offset(h)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "MINT":
+        h = 160.0
+        s = lerp(0.7, 0.5, t_age)
+        v = lerp(1.0, 0.85, t_age) * clamp01(global_v_mul)
+        h = apply_hue_offset(h)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "PEACH":
+        h = 20.0
+        s = lerp(0.8, 0.5, t_age)
+        v = lerp(1.0, 0.85, t_age) * clamp01(global_v_mul)
+        h = apply_hue_offset(h)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "LAVENDER":
+        h = 270.0
+        s = lerp(0.5, 0.3, t_age)
+        v = lerp(1.0, 0.85, t_age) * clamp01(global_v_mul)
+        h = apply_hue_offset(h)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "ROSE":
+        h = 340.0
+        s = lerp(0.8, 0.5, t_age)
+        v = lerp(1.0, 0.85, t_age) * clamp01(global_v_mul)
+        h = apply_hue_offset(h)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "SKY":
+        h = 200.0
+        s = lerp(0.7, 0.4, t_age)
+        v = lerp(1.0, 0.85, t_age) * clamp01(global_v_mul)
+        h = apply_hue_offset(h)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "SAND":
+        h = 40.0
+        s = lerp(0.6, 0.3, t_age)
+        v = lerp(1.0, 0.85, t_age) * clamp01(global_v_mul)
+        h = apply_hue_offset(h)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "CHARCOAL":
+        h = 0.0
+        s = 0.0
+        v = lerp(0.3, 0.1, t_age) * clamp01(global_v_mul)
+        h = apply_hue_offset(h)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "CLOUDS":
+        h = 210.0
+        s = lerp(0.1, 0.0, t_age)
+        v = lerp(1.0, 0.9, t_age) * clamp01(global_v_mul)
+        h = apply_hue_offset(h)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "FLAME":
+        h = lerp(0.0, 45.0, t_age)
+        s = lerp(1.0, 0.7, t_age)
+        v = lerp(1.0, 0.8, t_age) * clamp01(global_v_mul)
+        h = apply_hue_offset(h)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+
+    # --- СЕЗОННЫЕ, НАУЧНЫЕ, МОНОХРОМНЫЕ и др. ---
+    elif pal == "SPRING":
+        h,s,v = hue_spring_from_t(t_age); h = apply_hue_offset(h)
+        v *= clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "SUMMER":
+        h,s,v = hue_summer_from_t(t_age); h = apply_hue_offset(h)
+        v *= clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "AUTUMN":
+        h,s,v = hue_autumn_from_t(t_age); h = apply_hue_offset(h)
+        v *= clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "WINTER":
+        h,s,v = hue_winter_from_t(t_age); h = apply_hue_offset(h)
+        v *= clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "ICE":
+        h,s,v = hue_ice_from_t(t_age); h = apply_hue_offset(h)
+        v *= clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "FOREST":
+        h,s,v = hue_forest_from_t(t_age); h = apply_hue_offset(h)
+        v *= clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "DESERT":
+        h,s,v = hue_desert_from_t(t_age); h = apply_hue_offset(h)
+        v *= clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "VIRIDIS":
+        h,s,v = hue_viridis_from_t(t_age); h = apply_hue_offset(h)
+        v *= clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "INFERNO":
+        h,s,v = hue_inferno_from_t(t_age); h = apply_hue_offset(h)
+        v *= clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "MAGMA":
+        h,s,v = hue_magma_from_t(t_age); h = apply_hue_offset(h)
+        v *= clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "PLASMA":
+        h,s,v = hue_plasma_from_t(t_age); h = apply_hue_offset(h)
+        v *= clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "CIVIDIS":
+        h,s,v = hue_cividis_from_t(t_age); h = apply_hue_offset(h)
+        v *= clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "TWILIGHT":
+        h,s,v = hue_twilight_from_t(t_age); h = apply_hue_offset(h)
+        v *= clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+
+    # --- ОСТАЛЬНЫЕ ---
+    elif pal == "RAINBOWSMOOTH":
+        h,s,v = hue_rainbow_smooth_from_t(t_age); h = apply_hue_offset(h)
+        v *= clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "SUNSET":
+        h,s,v = hue_sunset_from_t(t_age); h = apply_hue_offset(h)
+        v *= clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "AURORA":
+        h,s,v = hue_aurora_from_t(t_age); h = apply_hue_offset(h)
+        v *= clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "GALAXY":
+        h,s,v = hue_galaxy_from_t(t_age); h = apply_hue_offset(h)
+        v *= clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "TROPICAL":
+        h,s,v = hue_tropical_from_t(t_age); h = apply_hue_offset(h)
+        v *= clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "VOLCANO":
+        h,s,v = hue_volcano_from_t(t_age); h = apply_hue_offset(h)
+        v *= clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "DEEPSEA":
+        h,s,v = hue_deepsea_from_t(t_age); h = apply_hue_offset(h)
+        v *= clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "BGYR":
+        hue_deg = hue_bgyr_from_t(t_age)
+        hue_deg = apply_hue_offset(hue_deg)
+        v = clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(hue_deg, 0.85*sat_mul, v*val_mul)
     
-    if pal == "GRAYSCALE":
+    elif pal == "SEPIA":
+        hue_deg = hue_sepia_from_t(t_age); 
+        hue_deg = apply_hue_offset(hue_deg)
+        v *= clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(hue_deg, s*sat_mul, v*val_mul)
+
+    # --- МОНОХРОМНЫЕ и КОНТРАСТНЫЕ ---
+    elif pal == "GRAYSCALE":
         if t_age < 1/3:      v_age = lerp(1.0, 0.8, t_age*3.0)
         elif t_age < 2/3:    v_age = lerp(0.8, 0.5, (t_age-1/3)*3.0)
         else:                v_age = lerp(0.5, 0.25, (t_age-2/3)*3.0)
@@ -1726,7 +2488,6 @@ def color_from_age_only(age: int, fade_start: int, max_age: int,
         v *= val_mul
         g = int(255*clamp01(v))
         return (g, g, g)
-
     elif pal == "RED_DARKRED_GRAY_BLACK":
         if t_age < 1/3:
             s = 1.0; v_age = lerp(1.0, 0.65, t_age*3.0); hue_deg = 0.0
@@ -1739,85 +2500,7 @@ def color_from_age_only(age: int, fade_start: int, max_age: int,
         sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
         return _rgb_from_hsv(hue_deg, s*sat_mul, v*val_mul)
 
-    elif pal == "FIRE":
-        h,s,v = hue_fire_from_t(t_age); h = apply_hue_offset(h)
-        v *= clamp01(global_v_mul)
-        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
-        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
-
-    elif pal == "OCEAN":
-        h,s,v = hue_ocean_from_t(t_age); h = apply_hue_offset(h)
-        v *= clamp01(global_v_mul)
-        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
-        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
-
-    elif pal == "NEON":
-        h,s,v = hue_neon_from_t(t_age); h = apply_hue_offset(h)
-        v *= clamp01(global_v_mul)
-        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
-        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
-
-    elif pal == "UKRAINE":
-        h,s,v = hue_ukraine_from_t(t_age); h = apply_hue_offset(h)
-        v *= clamp01(global_v_mul)
-        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
-        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
-
-    elif pal == "RAINBOWSMOOTH":
-        h,s,v = hue_rainbow_smooth_from_t(t_age); h = apply_hue_offset(h)
-        v *= clamp01(global_v_mul)
-        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
-        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
-
-    elif pal == "SUNSET":
-        h,s,v = hue_sunset_from_t(t_age); h = apply_hue_offset(h)
-        v *= clamp01(global_v_mul)
-        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
-        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
-
-    elif pal == "AURORA":
-        h,s,v = hue_aurora_from_t(t_age); h = apply_hue_offset(h)
-        v *= clamp01(global_v_mul)
-        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
-        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
-
-    elif pal == "GALAXY":
-        h,s,v = hue_galaxy_from_t(t_age); h = apply_hue_offset(h)
-        v *= clamp01(global_v_mul)
-        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
-        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
-
-    elif pal == "TROPICAL":
-        h,s,v = hue_tropical_from_t(t_age); h = apply_hue_offset(h)
-        v *= clamp01(global_v_mul)
-        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
-        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
-
-    elif pal == "VOLCANO":
-        h,s,v = hue_volcano_from_t(t_age); h = apply_hue_offset(h)
-        v *= clamp01(global_v_mul)
-        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
-        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
-
-    elif pal == "DEEPSEA":
-        h,s,v = hue_deepsea_from_t(t_age); h = apply_hue_offset(h)
-        v *= clamp01(global_v_mul)
-        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
-        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
-
-    elif pal == "CYBERPUNK":
-        h,s,v = hue_cyberpunk_from_t(t_age); h = apply_hue_offset(h)
-        v *= clamp01(global_v_mul)
-        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
-        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
-
-    elif pal == "BGYR":
-        hue_deg = hue_bgyr_from_t(t_age)
-        hue_deg = apply_hue_offset(hue_deg)
-        v = clamp01(global_v_mul)
-        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
-        return _rgb_from_hsv(hue_deg, 0.85*sat_mul, v*val_mul)
-    
+    # --- Fallback ---
     else:
         # Fallback
         return (128, 128, 128)
@@ -1851,6 +2534,11 @@ def color_from_age_brightness_rms(age: int, rms: float, rms_strength: float,
         v *= val_mul
         g = int(255*clamp01(v))
         return (g, g, g)
+    elif pal == "SEPIA":
+        h,s,v = hue_sepia_from_t(t_age); h = apply_hue_offset(h)
+        v *= (0.65 + 0.35 * (t_rms * strength)) * clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
 
     elif pal == "RED_DARKRED_GRAY_BLACK":
         if t_age < 1/3:
@@ -1866,6 +2554,66 @@ def color_from_age_brightness_rms(age: int, rms: float, rms_strength: float,
 
     elif pal == "FIRE":
         h,s,v = hue_fire_from_t(t_age); h = apply_hue_offset(h)
+        v *= (0.65 + 0.35 * (t_rms * strength)) * clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "GOLD":
+        h,s,v = hue_gold_from_t(t_age); h = apply_hue_offset(h)
+        v *= (0.65 + 0.35 * (t_rms * strength)) * clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "SILVER":
+        h,s,v = hue_silver_from_t(t_age); h = apply_hue_offset(h)
+        v *= (0.65 + 0.35 * (t_rms * strength)) * clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "COPPER":
+        h,s,v = hue_copper_from_t(t_age); h = apply_hue_offset(h)
+        v *= (0.65 + 0.35 * (t_rms * strength)) * clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "EMERALD":
+        h,s,v = hue_emerald_from_t(t_age); h = apply_hue_offset(h)
+        v *= (0.65 + 0.35 * (t_rms * strength)) * clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "SAPPHIRE":
+        h,s,v = hue_sapphire_from_t(t_age); h = apply_hue_offset(h)
+        v *= (0.65 + 0.35 * (t_rms * strength)) * clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "RUBY":
+        h,s,v = hue_ruby_from_t(t_age); h = apply_hue_offset(h)
+        v *= (0.65 + 0.35 * (t_rms * strength)) * clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "AMETHYST":
+        h,s,v = hue_amethyst_from_t(t_age); h = apply_hue_offset(h)
+        v *= (0.65 + 0.35 * (t_rms * strength)) * clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "BRONZE":
+        h,s,v = hue_bronze_from_t(t_age); h = apply_hue_offset(h)
+        v *= (0.65 + 0.35 * (t_rms * strength)) * clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "PEARL":
+        h,s,v = hue_pearl_from_t(t_age); h = apply_hue_offset(h)
+        v *= (0.65 + 0.35 * (t_rms * strength)) * clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "CORAL":
+        h,s,v = hue_coral_from_t(t_age); h = apply_hue_offset(h)
+        v *= (0.65 + 0.35 * (t_rms * strength)) * clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "JADE":
+        h,s,v = hue_jade_from_t(t_age); h = apply_hue_offset(h)
+        v *= (0.65 + 0.35 * (t_rms * strength)) * clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "TOPAZ":
+        h,s,v = hue_topaz_from_t(t_age); h = apply_hue_offset(h)
         v *= (0.65 + 0.35 * (t_rms * strength)) * clamp01(global_v_mul)
         sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
         return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
@@ -1943,6 +2691,32 @@ def color_from_age_brightness_rms(age: int, rms: float, rms_strength: float,
         sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
         return _rgb_from_hsv(hue_deg, 0.85*sat_mul, v*val_mul)
     
+    elif pal == "BRONZE":
+        h,s,v = hue_bronze_from_t(t_age); h = apply_hue_offset(h)
+        v *= (0.65 + 0.35 * (t_rms * strength)) * clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "PEARL":
+        h,s,v = hue_pearl_from_t(t_age); h = apply_hue_offset(h)
+        v *= (0.65 + 0.35 * (t_rms * strength)) * clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "CORAL":
+        h,s,v = hue_coral_from_t(t_age); h = apply_hue_offset(h)
+        v *= (0.65 + 0.35 * (t_rms * strength)) * clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "JADE":
+        h,s,v = hue_jade_from_t(t_age); h = apply_hue_offset(h)
+        v *= (0.65 + 0.35 * (t_rms * strength)) * clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    elif pal == "TOPAZ":
+        h,s,v = hue_topaz_from_t(t_age); h = apply_hue_offset(h)
+        v *= (0.65 + 0.35 * (t_rms * strength)) * clamp01(global_v_mul)
+        sat_mul, val_mul = fade_factors(a, fade_start, max_age if max_age>0 else a+1, sat_drop_pct, val_drop_pct)
+        return _rgb_from_hsv(h, s*sat_mul, v*val_mul)
+    
     else:
         # Fallback
         return (128, 128, 128)
@@ -1968,13 +2742,28 @@ def color_from_pitch(freq_hz: float, rms: float, rms_strength: float,
 def color_from_rms(rms: float, palette: str,
                    color_rms_min: float, color_rms_max: float,
                    global_v_mul: float) -> Tuple[int,int,int]:
+    """
+    Generates an RGB color from RMS value and palette.
+    For the BGYR palette, the value parameter for _rgb_from_hsv is determined by global_v_mul,
+    and the saturation is fixed at 0.85.
+    """
     palette_norm = palette_key(palette)
     t = maybe_invert_t(norm_rms_for_color(rms, color_rms_min, color_rms_max))
+    # Инверсия rms_palette
+    if hasattr(locals().get('layer', None), 'invert_rms_palette'):
+        if getattr(locals()['layer'], 'invert_rms_palette', False):
+            t = 1.0 - t
 
     if palette_norm == "BGYR":
-        hue_deg = hue_bgyr_from_t(t)
-        hue_deg = apply_hue_offset(hue_deg)
-        return _rgb_from_hsv(hue_deg, 0.85, clamp01(global_v_mul))
+        h,s,v = hue_bgyr_from_t(t)
+        h = apply_hue_offset(h)
+        sat = 0.85
+        return _rgb_from_hsv(h, s*sat, v*clamp01(global_v_mul))
+
+    elif palette_norm == "SEPIA":
+        h,s,v = hue_sepia_from_t(t)
+        h = apply_hue_offset(h)
+        return _rgb_from_hsv(h, s, v * clamp01(global_v_mul))
 
     elif palette_norm == "GRAYSCALE":
         if t < 1/3: v = lerp(1.0, 0.8, t*3.0)
@@ -2014,6 +2803,21 @@ def color_from_rms(rms: float, palette: str,
 
     elif palette_norm == "SUNSET":
         h,s,v = hue_sunset_from_t(t); h = apply_hue_offset(h)
+        return _rgb_from_hsv(h, s, v*clamp01(global_v_mul))
+    elif palette_norm == "BRONZE":
+        h,s,v = hue_bronze_from_t(t); h = apply_hue_offset(h)
+        return _rgb_from_hsv(h, s, v*clamp01(global_v_mul))
+    elif palette_norm == "PEARL":
+        h,s,v = hue_pearl_from_t(t); h = apply_hue_offset(h)
+        return _rgb_from_hsv(h, s, v*clamp01(global_v_mul))
+    elif palette_norm == "CORAL":
+        h,s,v = hue_coral_from_t(t); h = apply_hue_offset(h)
+        return _rgb_from_hsv(h, s, v*clamp01(global_v_mul))
+    elif palette_norm == "JADE":
+        h,s,v = hue_jade_from_t(t); h = apply_hue_offset(h)
+        return _rgb_from_hsv(h, s, v*clamp01(global_v_mul))
+    elif palette_norm == "TOPAZ":
+        h,s,v = hue_topaz_from_t(t); h = apply_hue_offset(h)
         return _rgb_from_hsv(h, s, v*clamp01(global_v_mul))
 
     elif palette_norm == "AURORA":
@@ -2059,7 +2863,7 @@ def choose_settings() -> Optional[dict]:
     
     # Импортируем модуль с современным GUI
     try:
-        from backups.modern_gui import show_modern_gui
+        from modern_gui import show_modern_gui
         result = show_modern_gui(input_devices)
         
         # Преобразуем результат к ожидаемому формату
@@ -2087,14 +2891,14 @@ def choose_settings() -> Optional[dict]:
 
                 rules_all    = ['Conway', 'HighLife', 'Seeds', 'Day & Night', 'Replicator', '34Life', 'Maze', 'Coral', 'Anneal', 'DryLife']
                 # Используем новую группировку палитр
-                age_palettes = HSV_DESIGN_PALETTES  # Для возраста используем HSV-дизайны
-                rms_palettes = HSV_COLOR_PALETTES   # Для RMS используем HSV палитры
+                age_palettes = HSV_DESIGN_PALETTES  # Для возраста используем 'Возраст + RMS'
+                rms_palettes = HSV_COLOR_PALETTES   # Для RMS используем 'Только RMS'
                 
                 if diff_per_layer:
                     for i in range(layer_count):
                         layers_cfg.append({
                             'rule': rules_all[i % len(rules_all)],
-                            'color_mode': result.get('color_mode', 'HSV-дизайны'),
+                            'color_mode': result.get('color_mode', 'Возраст + RMS'),
                             'age_palette': age_palettes[i % len(age_palettes)],
                             'rms_palette': rms_palettes[(i+1) % len(rms_palettes)],
                             'alpha_live': 220,
@@ -2107,7 +2911,7 @@ def choose_settings() -> Optional[dict]:
                     for i in range(layer_count):
                         layers_cfg.append({
                             'rule': base_rule,
-                            'color_mode': result.get('color_mode', 'HSV-дизайны'),
+                            'color_mode': result.get('color_mode', 'Возраст + RMS'),
                             'age_palette': base_age_palette,
                             'rms_palette': base_palette,
                             'alpha_live': 220,
@@ -2124,7 +2928,7 @@ def choose_settings() -> Optional[dict]:
                 'rule': result.get('rule', 'Conway'),
                 'palette': result.get('palette', 'Blue->Green->Yellow->Red'),
                 'age_palette': result.get('age_palette', 'Blue->Green->Yellow->Red'),
-                'color_mode': result.get('color_mode', 'HSV-дизайны'),
+                'color_mode': result.get('color_mode', 'Возраст + RMS'),
                 'rms_modulation': result.get('rms_mod', True),
                 'rms_strength': result.get('rms_strength', 100),
                 'tick_ms': result.get('tick_ms', DEFAULT_TICK_MS),
@@ -2132,7 +2936,7 @@ def choose_settings() -> Optional[dict]:
                 'pitch_tick_min_ms': result.get('pitch_tick_min_ms', DEFAULT_PTICK_MIN_MS),
                 'pitch_tick_max_ms': result.get('pitch_tick_max_ms', DEFAULT_PTICK_MAX_MS),
                 'max_age': result.get('max_age', 120),
-                'aging_speed': result.get('aging_speed', 2.0),
+                'aging_speed': result.get('aging_speed', 10.0),
                 'fade_start_age': result.get('fade_start', 60),
                 'fade_saturation_drop': result.get('fade_sat_drop', 70),
                 'fade_value_drop': result.get('fade_val_drop', 60),
@@ -2148,7 +2952,7 @@ def choose_settings() -> Optional[dict]:
                 'soft_kill_percentage': result.get('soft_kill_rate', 80),
                 'soft_fade_floor': result.get('soft_fade_floor', 0.3),
                 'soft_fade_down_percentage': result.get('soft_fade_down', 1),
-                'soft_fade_up_percentage': result.get('soft_fade_up', 5),
+                'soft_fade_up_percentage': result.get('soft_fade_up', 1),
                 'layer_count': layer_count,
                 'layers_different': result.get('diff_per_layer', True),
                 'layers_cfg': layers_cfg,
@@ -2545,7 +3349,7 @@ class LayerConfig:
     mute: bool = False
     palette_mix: float = 0.5  # Баланс между палитрами: 0.0=только возраст, 1.0=только RMS
     spawn_method: str = "Стабильные блоки"  # Метод спавна клеток
-    initial_cells: int = 30  # Процент от максимального спавна (0-100%)
+    spawn_percent: int = 30  # Процент от максимального спавна (0-300%)
 
 
 class LayerGenerator:
@@ -2569,8 +3373,8 @@ class LayerGenerator:
         
         # Добавляем начальные клетки согласно выбранному методу
         # Преобразуем процент в количество клеток (базовое количество для инициализации)
-        base_spawn_amount = 50  # Базовое количество клеток для инициализации
-        actual_cells = int(base_spawn_amount * (config.initial_cells / 100.0))
+        base_spawn_amount = SPAWN_SCALE  # Используем SPAWN_SCALE как базу
+        actual_cells = int(base_spawn_amount * (config.spawn_percent / 100.0))
         spawn_cells(grid, max(1, actual_cells), config.spawn_method)
         
         # Устанавливаем начальный возраст для живых клеток
@@ -2624,7 +3428,7 @@ class LayerGenerator:
             solo=False,  # По умолчанию не соло
             mute=False,  # По умолчанию не заглушен
             spawn_method=random.choice(self.available_spawn_methods),
-            initial_cells=random.randint(20, 80)  # Процент 20-80%
+            spawn_percent=random.randint(20, 80)  # Процент 20-80%
         )
     
     def create_preset_configs(self, count: int, preset_type: str = "balanced") -> List[LayerConfig]:
@@ -2681,7 +3485,7 @@ class LayerGenerator:
                 solo=False,
                 mute=False,
                 spawn_method=base_config.spawn_method,
-                initial_cells=min(100, base_config.initial_cells + i * 10)  # Увеличиваем процент на 10% для каждого следующего слоя
+                spawn_percent=min(100, base_config.spawn_percent + i * 10)  # Увеличиваем процент на 10% для каждого следующего слоя
             )
             configs.append(config)
         
@@ -2691,7 +3495,6 @@ class LayerGenerator:
         """Обновляет прозрачность слоя"""
         layer.alpha_live = max(0, min(255, alpha_live))
         layer.alpha_old = max(0, min(255, alpha_old))
-        print(f"🔧 Прозрачность слоя обновлена: α_live={layer.alpha_live}, α_old={layer.alpha_old}")
 
 # -------------------- Цветовые функции --------------------
 
@@ -2703,82 +3506,96 @@ class RenderManager:
     def clear(self, color=BG_COLOR):
         self.canvas.fill(color)
 
+    def _has_layer_masks(self):
+        """Helper to check if both last_age_mask and last_grid_mask exist."""
+        return hasattr(self, 'last_age_mask') and hasattr(self, 'last_grid_mask')
+
     def blit_layer(self, color_img: np.ndarray, mix: str, alpha_live: int = 255, alpha_old: int = 255):
         """color_img: (H,W,3) uint8 в координатах клеток."""
         try:
             h, w = color_img.shape[:2]
-            
             # ИСПРАВЛЕНИЕ: Используем nearest neighbor для точного масштабирования без интерполяции
             # Создаем поверхность точно по размеру клеток
             rgb_surf = pygame.surfarray.make_surface(np.transpose(color_img, (1, 0, 2)))
-            
             # Масштабируем с nearest neighbor (без интерполяции) для четких границ
             scaled_size = (w * self.cs, h * self.cs)  # w*8, h*8
             rgb_surf = pygame.transform.scale(rgb_surf, scaled_size)
-            
             # Применяем альфа
             rgb_surf.set_colorkey((0, 0, 0))  # Черный = прозрачный
-            rgb_surf.set_alpha(alpha_live)
-            
-            # Применяем режим смешивания
-            if mix == "Additive":
+
+            # --- Корректная генерация альфа-канала для каждого слоя ---
+            if self._has_layer_masks():
+                age_mask = self.last_age_mask
+                grid_mask = self.last_grid_mask
+                max_age = getattr(self, 'last_max_age', 60)
+                old_mask = (age_mask >= max_age) & grid_mask
+                live_mask = (age_mask < max_age) & grid_mask
+
+                surf_w, surf_h = rgb_surf.get_size()
+                mask_shape = age_mask.shape
+                alpha_arr = np.zeros(mask_shape, dtype=np.uint8)
+                alpha_arr[live_mask] = np.uint8(alpha_live)
+                alpha_arr[old_mask] = np.uint8(alpha_old)
+
+                # Масштабируем альфа-маску до размера поверхности
+                if alpha_arr.shape != (surf_h, surf_w):
+                    alpha_arr_t = np.transpose(alpha_arr, (1, 0))
+                    try:
+                        from scipy.ndimage import zoom
+                        zoom_y = surf_h / alpha_arr_t.shape[1]
+                        zoom_x = surf_w / alpha_arr_t.shape[0]
+                        scaled_alpha_arr = zoom(alpha_arr_t, (zoom_x, zoom_y), order=0)
+                        scaled_alpha_arr = scaled_alpha_arr.astype(np.uint8)
+                    except ImportError:
+                        alpha_mask_surf = pygame.surfarray.make_surface(np.stack([alpha_arr_t]*3, axis=-1))
+                        alpha_mask_surf = pygame.transform.scale(alpha_mask_surf, (surf_w, surf_h))
+                        scaled_alpha_arr = pygame.surfarray.array3d(alpha_mask_surf)[:,:,0].astype(np.uint8)
+                else:
+                    scaled_alpha_arr = np.transpose(alpha_arr, (1, 0)).astype(np.uint8)
+
+                # Диагностика: вывод уникальных значений альфа-маски
+                print(f"Alpha mask unique values after scaling: {np.unique(scaled_alpha_arr)}")
+
+                rgb_surf = rgb_surf.convert_alpha()
+                alpha_pixels = pygame.surfarray.pixels_alpha(rgb_surf)
+                alpha_pixels[:, :] = scaled_alpha_arr
+                del alpha_pixels
+            else:
+                # Fallback: если нет маски, применяем глобальный alpha ко всему слою
+                rgb_surf.set_alpha(np.uint8(alpha_live))
+            mode = (mix or "normal")
+            try:
+                mode_l = mode.lower()
+            except Exception:
+                mode_l = "normal"
+            if mode_l in ("add", "additive", "blend_add"):
                 self.canvas.blit(rgb_surf, (0, 0), special_flags=pygame.BLEND_RGB_ADD)
+            elif mode_l in ("multiply", "mult", "blend_mult"):
+                self.canvas.blit(rgb_surf, (0, 0), special_flags=pygame.BLEND_RGB_MULT)
+            elif mode_l in ("screen",):
+                arr_canvas = pygame.surfarray.pixels3d(self.canvas)
+                arr_new = pygame.surfarray.pixels3d(rgb_surf)
+                out = arr_canvas.astype(np.uint16) + arr_new.astype(np.uint16) - (arr_canvas.astype(np.uint16) * arr_new.astype(np.uint16)) // 255
+                np.clip(out, 0, 255, out=out)
+                arr_canvas[:] = out.astype(np.uint8)
+                del arr_canvas, arr_new
             else:
                 self.canvas.blit(rgb_surf, (0, 0))
-            
         except Exception as e:
             print(f"ERROR in blit_layer: {e}")
             print(f"Image shape: {color_img.shape}, mix: {mix}")
             import traceback
             traceback.print_exc()
-            
-            # Fallback к оригинальному методу
-            try:
-                # Альтернативный метод - создаем две поверхности
-                h, w = color_img.shape[:2]
-                
-                # Создаем RGB поверхность
-                rgb_surf = pygame.surfarray.make_surface(np.transpose(color_img, (1, 0, 2)))
-                rgb_surf = pygame.transform.scale(rgb_surf, self.canvas.get_size())
-                
-                # Создаем альфа-маску с учетом прозрачности слояф
-                brightness = np.sum(color_img, axis=2)
-                # Применяем альфа-значения к ярким пикселям (alpha_live для живых клеток)
-                alpha_mask = np.where(brightness > 0, alpha_live, 0).astype(np.uint8)
-                alpha_surf = pygame.surfarray.make_surface(np.transpose(alpha_mask, (1, 0)))
-                alpha_surf = pygame.transform.scale(alpha_surf, self.canvas.get_size())
-                
-                # Создаем финальную поверхность с альфа-каналом
-                final_surf = rgb_surf.convert_alpha()
-                
-                # Применяем альфа-маску через per-pixel alpha
-                final_array = pygame.surfarray.array3d(final_surf)
-                alpha_array = pygame.surfarray.array2d(alpha_surf)
-                
-                # Устанавливаем альфа-значения
-                final_surf_alpha = pygame.Surface(self.canvas.get_size(), pygame.SRCALPHA)
-                final_surf_alpha.fill((0, 0, 0, 0))  # Прозрачный фон
-                
-                # Применяем альфа к поверхности и копируем на финальную поверхность
-                final_surf.set_alpha(alpha_live)
-                final_surf.set_colorkey((0, 0, 0))
-                final_surf_alpha.blit(final_surf, (0, 0))
-                
-                # Применяем режим смешивания
-                if mix == "Additive":
-                    self.canvas.blit(final_surf_alpha, (0, 0), special_flags=pygame.BLEND_ADD)
-                
-            except Exception as e2:
-                print(f"ERROR in fallback blit_layer: {e2}")
-                
-                # Простейший fallback
-                surf = pygame.surfarray.make_surface(np.transpose(color_img, (1, 0, 2)))
-                surf = pygame.transform.scale(surf, self.canvas.get_size())
-                surf.set_colorkey((0, 0, 0))
-                surf.set_alpha(alpha_live)
-                if mix == "Additive":
-                    self.canvas.blit(surf, (0, 0), special_flags=pygame.BLEND_RGB_ADD)
-            self.canvas.blit(surf, (0, 0))
+            # Fallback: always define surf
+            surf = pygame.surfarray.make_surface(np.transpose(color_img, (1, 0, 2)))
+            surf = pygame.transform.scale(surf, self.canvas.get_size())
+            surf.set_colorkey((0, 0, 0))
+            surf.set_alpha(alpha_live)
+            surf.set_alpha(alpha_old)
+            if mix == "Additive":
+                self.canvas.blit(surf, (0, 0), special_flags=pygame.BLEND_RGB_ADD)
+            else:
+                self.canvas.blit(surf, (0, 0))
 
 
 # -------------------- Приложение --------------------
@@ -2885,7 +3702,7 @@ class UISlider:
                 value_surface = value_font.render(value_text, True, value_color)
                 
                 # Размещаем текст ВНАДцм слайдером с достаточным отступом
-                text_y = self.y - 25  # Увеличиваем отступ чтобы избежать наложения
+                text_y = self.y - 40  # Увеличиваем отступ чтобы избежать наложения
                 surface.blit(label_surface, (self.x, text_y))
                 value_x = self.x + self.width - value_surface.get_width()
                 surface.blit(value_surface, (value_x, text_y))
@@ -3254,7 +4071,7 @@ def build_color_image(layer_grid: np.ndarray, layer_age: np.ndarray, mode: str,
 
     rms_strength = cfg.get('rms_strength', 100) / 100.0
     fade_start   = cfg.get('fade_start', 60)
-    # max_age теперь передается как параметр из слоя
+    max_age      = cfg.get('max_age', 120)
     sat_drop     = cfg.get('fade_sat_drop', 70)
     val_drop     = cfg.get('fade_val_drop', 60)
     v_mul        = cfg.get('global_v_mul', 1.0)
@@ -3264,69 +4081,31 @@ def build_color_image(layer_grid: np.ndarray, layer_age: np.ndarray, mode: str,
     # быстрый проход по True-ячейкам
     ys, xs = np.nonzero(layer_grid)
     
-    # Debug отключен для производительности
-    # if len(ys) > 0:
-    #     max_y, max_x = np.max(ys), np.max(xs)
-    #     min_y, min_x = np.min(ys), np.min(xs)
-    #     if max_y >= H or max_x >= W or min_y < 0 or min_x < 0:
-    #         print(f"🚨 NONZERO ERROR: np.nonzero returned invalid indices")
-    #         print(f"   Grid shape: {H}x{W}, nonzero range: y=[{min_y},{max_y}], x=[{min_x},{max_x}]")
-    #         # Filter out invalid indices
-    #         valid_mask = (ys >= 0) & (ys < H) & (xs >= 0) & (xs < W)
-    #         ys, xs = ys[valid_mask], xs[valid_mask]
-    #         print(f"   Filtered to {len(ys)} valid indices")
-    
     for idx, (i, j) in enumerate(zip(ys, xs)):
-        # Преобразуем индексы в int для безопасности
+        # Преобразуем индексы в int
         i, j = int(i), int(j)
         
-        # CRITICAL: Add bounds checking to prevent index errors
         if i < 0 or i >= H or j < 0 or j >= W:
-            # print(f"🚨 BOUNDS ERROR: Attempting to access grid[{i},{j}] but grid is only {H}x{W}")
             continue
             
-        # Additional safety check for age array
         if i >= layer_age.shape[0] or j >= layer_age.shape[1]:
-            # print(f"🚨 AGE BOUNDS ERROR: Attempting to access age[{i},{j}] but age array is {layer_age.shape}")
             continue
             
         try:
-            # Проверяем режим отображения и используем соответствующую функцию цвета
-            if mode == "HSV Палитры":
+            if mode == "Только RMS":
                 color = color_from_rms(rms, rms_palette, cmin, cmax, v_mul)
             elif mode == "Высота ноты (Pitch)":
                 color = color_from_pitch(pitch, rms, rms_strength, v_mul)
             else:
-                # HSV-дизайны (бывший "Возраст + RMS")
                 color = color_from_age_rms(int(layer_age[i, j]), rms, rms_strength,
                                            fade_start, max_age, sat_drop, val_drop,
-                                           cmin, cmax, v_mul, age_palette, rms_palette, 
+                                           cmin, cmax, v_mul, age_palette, rms_palette,
                                            rms_mode, blend_mode, rms_enabled, palette_mix)
-            
-            # Устанавливаем RGB цвет
             img[i, j] = color
         except Exception as e:
-            if idx < 5:  # Выводим только первые 5 ошибок чтобы не спамить
-                print(f"COLOR ERROR at cell ({i},{j}), age={layer_age[i,j] if i < layer_age.shape[0] and j < layer_age.shape[1] else 'out_of_bounds'}: {e}")
-                print(f"  Mode: {mode}, Age palette: {age_palette}, RMS palette: {rms_palette}")
-                print(f"  RMS mode: {rms_mode}, blend: {blend_mode}, rms_enabled: {rms_enabled}")
-            # Используем белый цвет по умолчанию при ошибке
+            print(f"Color calculation error at ({i},{j}): {e}")
             img[i, j] = (255, 255, 255)
-    
     return img
-
-
-
-
-
-
-
-
-
-
-
-
-
 # -------------------- Приложение --------------------
 
 class App:
@@ -3336,7 +4115,6 @@ class App:
         for layer in self.layers:
             layer.tick_ms = new_tick_ms
         self.hud.update_from_app(self)
-        print(f"[DEBUG] Global tick_ms changed to {new_tick_ms}")
     def __init__(self, sel: Dict[str, Any]):
         self.sel = sel
         self.W = GRID_W * CELL_SIZE + FIELD_OFFSET_X
@@ -3344,63 +4122,45 @@ class App:
 
         pygame.init()
         self.screen = pygame.display.set_mode((self.W + HUD_WIDTH, self.H))  # Добавляем HUD_WIDTH
-        pygame.display.set_caption("Guitar Life v13 — Ultimate [F12 = Settings, H = HUD]")
+        pygame.display.set_caption("Guitar Life 4 — Ultimate")
         self.clock = pygame.time.Clock()
         self.font = pygame.font.SysFont("times new roman,georgia,serif", 16)
-        self.hud  = HUD(self.font, self.H, 5)  # Поддерживаем до 5 слоёв в GUI
+        self.show_hud = True  # параметр включения HUD
+        self.smooth_scale = False  # параметр включения сглаженного масштабирования для HUD
+        self.hud = HUD(self.font, self.H, 5, enabled=self.show_hud, smooth_scale=self.smooth_scale)  # Поддерживаем до 5 слоёв в GUI
         self.hud.on_parameter_change = self.on_hud_parameter_change
         self.hud.update_callbacks()  # Обновляем коллбэки после установки
+        self.hud.app = self
         
         # Инициализация окна настроек
         self.settings_window = None
         if SETTINGS_WINDOW_AVAILABLE:
             self.settings_window = SettingsWindow(self)
-            print("✅ Окно настроек инициализировано")
         
         # HUD кэширование для оптимизации производительности
         self.hud_surface_cache = None
         self.hud_last_update = 0
         self.hud_cache_valid = False
-        
         self.renderer = RenderManager(GRID_W, GRID_H, CELL_SIZE)
-
-        # Initialize layers
         self.layers: List[Layer] = []
-        print(f"DEBUG: Creating {sel['layer_count']} layers...")
         
         # Проверяем, используем ли мы конфигурацию слоёв из sel или из app_config.json
         use_config_file = sel.get('layers_different', True) and ('layers_cfg' not in sel or not sel['layers_cfg'])
-        
+
         for i in range(sel['layer_count']):
             grid = np.zeros((GRID_H, GRID_W), dtype=bool)
             age = np.zeros((GRID_H, GRID_W), dtype=np.int32)
-            
+
             # Проверяем размеры сетки
             if grid.shape != (GRID_H, GRID_W):
-                print(f"ERROR: Layer {i} grid has wrong shape: {grid.shape}, expected: ({GRID_H}, {GRID_W})")
-            
-            # Добавляем начальные клетки для каждого слоя
-            print(f"DEBUG: Adding initial cells to layer {i}...")
-            # Создаем только стабильные блоки 2x2
-            cells_added = 0
-            for _ in range(5):  # 5 блоков на слой
-                r = random.randrange(5, GRID_H - 5)
-                c = random.randrange(5, GRID_W - 5)
-                # Создаем блок 2x2
-                grid[r:r+2, c:c+2] = True
-                age[r:r+2, c:c+2] = 1
-                cells_added += 4
-            
-            print(f"DEBUG: Layer {i} created with {cells_added} initial cells")
-            
-            # Определяем параметры слоя
+                grid = np.zeros((GRID_H, GRID_W), dtype=bool)
             if use_config_file:
                 # Используем базовые настройки, они будут перезаписаны apply_different_layer_settings()
                 layer_params = {
                     'rule': 'rule',
                     'age_palette': 'Blue->Green->Yellow->Red',
                     'rms_palette': 'Fire',
-                    'color_mode': 'age',
+                    'color_mode': 'Возраст + RMS',
                     'rms_mode': 'brightness',
                     'alpha_live': 255,
                     'alpha_old': 255,
@@ -3423,7 +4183,7 @@ class App:
                         'rule': row.get('rule', 'Conway'),
                         'age_palette': row.get('age_palette', 'Blue->Green->Yellow->Red'),
                         'rms_palette': row.get('rms_palette', 'Blue->Green->Yellow->Red'),
-                        'color_mode': row.get('color_mode', 'HSV-дизайны'),
+                        'color_mode': row.get('color_mode', 'Возраст + RMS'),
                         'rms_mode': row.get('rms_mode', 'brightness'),
                         'alpha_live': int(row.get('alpha_live', row.get('alpha', 220))),
                         'alpha_old': int(row.get('alpha_old', row.get('alpha', 140))),
@@ -3433,12 +4193,12 @@ class App:
                         'blend_mode': blend_val,}
                 else:
                     # Fallback к базовым настройкам если индекс выходит за границы
-                    print(f"WARNING: layers_cfg[{i}] not found, using defaults")
+                    # Debug print removed
                     layer_params = {
                         'rule': 'Conway',
                         'age_palette': 'Fire',
                         'rms_palette': 'Ocean',
-                        'color_mode': 'HSV-дизайны',
+                        'color_mode': 'Возраст + RMS',
                         'rms_mode': 'brightness',
                         'alpha_live': 220,
                         'alpha_old': 140,
@@ -3446,17 +4206,14 @@ class App:
                         'solo': False,
                         'mute': False
                     }
-            
+
             layer = Layer(
                 grid=grid,
                 age=age,
                 **layer_params
             )
             self.layers.append(layer)
-            print(f"DEBUG: Layer {i} added with solo={layer.solo}, mute={layer.mute}")
-
-        print(f"DEBUG: Total {len(self.layers)} layers created")
-
+        # Применяем разные настройки слоёв если нужно
         # FX
         self.fx = dict(sel.get('fx', {}))
 
@@ -3472,7 +4229,7 @@ class App:
 
         # цвет/возраст
         self.max_age = sel.get('max_age', 120)
-        self.aging_speed = sel.get('aging_speed', 1.0)  # Ускорение старения (умножитель)
+        self.aging_speed = sel.get('aging_speed', 10.0)  # Ускорение старения (умножитель)
         self.fade_start = sel.get('fade_start', 60)
         self.fade_sat_drop = sel.get('fade_sat_drop', 70)
         self.fade_val_drop = sel.get('fade_val_drop', 60)
@@ -3487,20 +4244,20 @@ class App:
         self.soft_kill_rate = sel.get('soft_kill_rate', 80)
         self.soft_fade_floor = sel.get('soft_fade_floor', 0.3)
         self.soft_fade_down  = sel.get('soft_fade_down', 1)
-        self.soft_fade_up    = sel.get('soft_fade_up', 5)
+        self.soft_fade_up    = sel.get('soft_fade_up', 1)
         
         # Новые параметры контроля популяции
-        self.max_cells_percent = sel.get('max_cells_percent', 80)  # Максимальный процент заполнения сетки
-        self.soft_clear_threshold = sel.get('soft_clear_threshold', 70)  # При каком проценте начинать очистку
-        self.age_bias = sel.get('age_bias', 80)  # Вероятность удаления старых клеток vs случайных
-        self.old_cells_priority = sel.get('old_cells_priority', True)  # Приоритет старых клеток при удалении
-        self.clear_type = sel.get('clear_type', 'Полная очистка')  # Тип очистки для кнопки Clear
-        self.clear_partial_percent = sel.get('clear_partial_percent', 50)  # Процент для частичной очистки
-        self.clear_age_threshold = sel.get('clear_age_threshold', 10)  # Возрастной порог для очистки по возрасту
+        self.max_cells_percent = sel.get('max_cells_percent', 90)  # Максимальный процент заполнения сетки
+        self.soft_clear_threshold = sel.get('soft_clear_threshold', 80)  # При каком проценте начинать очистку
+        self.age_bias = sel.get('age_bias', 0)  # Вероятность удаления старых клеток vs случайных
+        self.old_cells_priority = sel.get('old_cells_priority', False)  # Приоритет старых клеток при удалении
+        # self.clear_type = sel.get('clear_type', 'Полная очистка')  # Тип очистки для кнопки Clear
+        # self.clear_partial_percent = sel.get('clear_partial_percent', 80)  # Процент для частичной очистки
+        # self.clear_age_threshold = sel.get('clear_age_threshold', 1)  # Возрастной порог для очистки по возрасту
         
         # Spawn method
         self.spawn_method = sel.get('spawn_method', 'Стабильные блоки')  # Метод спавна новых клеток
-        self.clear_random_percent = sel.get('clear_random_percent', 30)  # Процент для случайной очистки
+        # self.clear_random_percent = sel.get('clear_random_percent', 30)  # Процент для случайной очистки
 
         # зеркала
         self.mirror_x = sel.get('mirror_x', False)
@@ -3517,11 +4274,6 @@ class App:
         # Применяем настройки палитр из GUI к глобальному состоянию
         PALETTE_STATE.rms_palette_choice = sel.get('palette', 'Blue->Green->Yellow->Red')
         PALETTE_STATE.age_palette_choice = sel.get('age_palette', 'Blue->Green->Yellow->Red')
-        print(f"DEBUG: Applied GUI palette settings - RMS: {PALETTE_STATE.rms_palette_choice}, Age: {PALETTE_STATE.age_palette_choice}")
-        
-        # Отладка: проверяем инициализацию
-        total_cells = sum(np.sum(L.grid) for L in self.layers)
-        print(f"DEBUG: Initialized {len(self.layers)} layers with {total_cells} total seed cells")
         
         # Инициализируем выбранный слой для редактирования
         self.selected_layer_index = 0  # По умолчанию выбран первый слой
@@ -3544,25 +4296,22 @@ class App:
         self.fx['poster_levels'] = 5
         PALETTE_STATE.invert = False
         PALETTE_STATE.hue_offset = 0.0
-        for L in self.layers:
-            L.age_palette = "White->LightGray->Gray->DarkGray"
-            L.rms_palette = "White->LightGray->DarkGray"
+        for layer in self.layers:
+            layer.age_palette = "White->LightGray->Gray->DarkGray"
+            layer.rms_palette = "White->LightGray->DarkGray"
 
     def on_hud_parameter_change(self, param_name: str, value):
+        # Обработка изменения aging_speed для слоя
+        if param_name.startswith('layer_') and param_name.endswith('_aging_speed'):
+            layer_idx = int(param_name.split('_')[1])
+            if layer_idx < len(self.layers):
+                aging_speed = max(1.0, min(10.0, float(value)))
+                self.layers[layer_idx].aging_speed = aging_speed
+                print(f"⏳ Layer {layer_idx+1} Aging Speed: {aging_speed}")
+                self.save_layer_settings()
         """Обработчик изменений параметров из HUD"""
         # Инвалидируем кэш HUD при любом изменении параметров
         self.hud_cache_valid = False
-        
-        # Более информативный вывод
-        if param_name.startswith('fx_'):
-            fx_name = param_name[3:]
-            status = "ON" if value else "OFF"
-            print(f"🎨 FX {fx_name.upper()}: {status}")
-        elif isinstance(value, bool):
-            status = "✓" if value else "✗"
-            print(f"⚙️ {param_name}: {status}")
-        else:
-            print(f"🎛️ {param_name}: {value}")
         
         # Защита от некорректных значений
         try:
@@ -3597,28 +4346,38 @@ class App:
                 self.color_rms_max = float(max(0.001, min(1.0, float(value))))
             elif param_name == 'soft_kill_rate':
                 self.soft_kill_rate = int(max(0, min(100, float(value))))
+                self.sel['soft_kill_rate'] = self.soft_kill_rate
             elif param_name == 'soft_fade_floor':
                 self.soft_fade_floor = float(max(0.0, min(1.0, float(value))))
+                self.sel['soft_fade_floor'] = self.soft_fade_floor
             elif param_name == 'soft_fade_down':
                 self.soft_fade_down = int(max(1, min(100, float(value))))
+                self.sel['soft_fade_down'] = self.soft_fade_down
             elif param_name == 'soft_fade_up':
                 self.soft_fade_up = int(max(1, min(100, float(value))))
+                self.sel['soft_fade_up'] = self.soft_fade_up
             elif param_name == 'max_cells_percent':
                 self.max_cells_percent = int(max(10, min(100, float(value))))
+                self.sel['max_cells_percent'] = self.max_cells_percent
             elif param_name == 'soft_clear_threshold':
                 self.soft_clear_threshold = int(max(10, min(100, float(value))))
+                self.sel['soft_clear_threshold'] = self.soft_clear_threshold
             elif param_name == 'age_bias':
                 self.age_bias = int(max(0, min(100, float(value))))
+                self.sel['age_bias'] = self.age_bias
             elif param_name == 'pitch_tick_min':
                 self.pitch_tick_min = int(max(1, min(1000, float(value))))
             elif param_name == 'pitch_tick_max':
                 self.pitch_tick_max = int(max(1, min(5000, float(value))))
             elif param_name == 'clear_partial_percent':
                 self.clear_partial_percent = int(max(10, min(90, float(value))))
+                self.sel['clear_partial_percent'] = self.clear_partial_percent
             elif param_name == 'clear_age_threshold':
                 self.clear_age_threshold = int(max(1, min(100, float(value))))
+                self.sel['clear_age_threshold'] = self.clear_age_threshold
             elif param_name == 'clear_random_percent':
                 self.clear_random_percent = int(max(10, min(90, float(value))))
+                self.sel['clear_random_percent'] = self.clear_random_percent
         except (ValueError, TypeError):
             print(f"⚠️ Invalid value for {param_name}: {value}")
             return
@@ -3631,6 +4390,7 @@ class App:
             self.rms_modulation = bool(value)
         elif param_name == 'soft_clear_enable':
             self.soft_clear_enable = bool(value)
+            self.sel['soft_clear_enable'] = self.soft_clear_enable
         elif param_name == 'soft_mode':
             # Преобразуем значение комбобокса в внутреннее представление
             if value == "Kill":
@@ -3639,6 +4399,7 @@ class App:
                 self.soft_mode = 'Затухание клеток'
             elif value == "Fade+Kill":
                 self.soft_mode = 'Затухание + удаление'
+            self.sel['soft_mode'] = self.soft_mode
         elif param_name == 'soft_mode_toggle':
             # Оставляем для обратной совместимости
             self.soft_mode = 'Затухание клеток' if value else 'Удалять клетки'
@@ -3650,12 +4411,12 @@ class App:
             self.mirror_x = bool(value)
         elif param_name == 'mirror_y':
             self.mirror_y = bool(value)
-        
         # FX параметры
         elif param_name.startswith('fx_'):
             fx_name = param_name[3:]  # Убираем префикс 'fx_'
             self.fx[fx_name] = bool(value)
-            
+        # elif param_name == 'fx_scan_strength':
+        #     self.fx['scan_strength'] = float(max(0.0, min(1.0, float(value))))
         # Действия кнопок
         elif param_name == 'random_pattern':
             self.clear_all_layers()
@@ -3674,6 +4435,8 @@ class App:
             self.apply_joy_division()
         elif param_name == 'conway_gliders':
             self.create_glider_pattern()
+        # elif param_name == 'spawn_method':
+        #     self.spawn_method = str(value)
             
         # Слой-специфичные параметры
         elif param_name == 'layer_count':
@@ -3768,13 +4531,22 @@ class App:
                 self.layers[layer_idx].rule = str(value)
                 print(f"🔄 Layer {layer_idx+1} Rule set to: {value}")
                 self.save_layer_settings()
-        elif param_name.startswith('layer_') and '_initial_cells' in param_name:
-            # Обработка процента спавна клеток (0-100%)
+        elif param_name.startswith('layer_') and '_spawn_percent' in param_name:
+            # Обработка процента спавна клеток (0-300%)
             layer_idx = int(param_name.split('_')[1])
             if layer_idx < len(self.layers):
-                spawn_percent = max(0, min(100, float(value)))
-                print(f"🎯 Layer {layer_idx+1} Spawn Rate: {spawn_percent:.0f}% (max {SPAWN_BASE + SPAWN_SCALE} cells)")
-                # Процент сохраняется в слайдере HUD и используется в update_layers()
+                spawn_percent = max(0, min(300, float(value)))
+                layer = self.layers[layer_idx]
+                layer.spawn_percent = spawn_percent
+                print(f"🎯 Layer {layer_idx+1} Spawn Rate: {spawn_percent:.0f}% (max {SPAWN_SCALE} cells)")
+                # Пересчёт клеток: очищаем слой и спавним новое количество
+                layer.grid[:] = False
+                layer.age[:] = 0
+                new_cells = int(SPAWN_SCALE * (spawn_percent / 100.0))
+                spawn_cells(layer.grid, new_cells, layer.spawn_method)
+                layer.age[layer.grid] = 1
+                self.save_layer_settings()
+                self.hud.update_from_app(self)  # Обновить HUD
         elif param_name.startswith('layer_') and '_blend_mode' in param_name:
             # Извлекаем номер слоя из имени параметра
             layer_idx = int(param_name.split('_')[1])
@@ -3809,7 +4581,7 @@ class App:
             if layer_idx < len(self.layers):
                 # Переключаем solo режим
                 self.layers[layer_idx].solo = not self.layers[layer_idx].solo
-                # Если включили solo, выключаем у всех остальных
+                # Если включили solo, выключаем у всех остальных 
                 if self.layers[layer_idx].solo:
                     for i, layer in enumerate(self.layers):
                         if i != layer_idx:
@@ -3831,7 +4603,6 @@ class App:
             if layer_idx < len(self.layers):
                 palette_mix = max(0.0, min(1.0, float(value)))
                 self.layers[layer_idx].palette_mix = palette_mix
-                print(f"🎨 Layer {layer_idx + 1} Palette Mix: {palette_mix:.2f} (Age←→RMS)")
                 self.save_layer_settings()  # Сохраняем настройки
         
         # Параметры эффектов
@@ -3988,145 +4759,140 @@ class App:
     def soft_clear(self):
         if not self.soft_clear_enable:
             return
-        if self.soft_mode == "Удалять клетки":
-            # Только удаление клеток
-            for L in self.layers:
-                g = L.grid
+        # Получаем параметры из HUD для каждого слоя
+        for i, layer in enumerate(self.layers):
+            if hasattr(self, 'hud') and self.hud and i < len(self.hud.layer_modules):
+                controls = self.hud.layer_modules[i]['controls']
+                soft_kill = controls.get('soft_kill').current_val if 'soft_kill' in controls else 80
+                fade_floor = controls.get('fade_floor').current_val if 'fade_floor' in controls else 0.6
+                age_bias = controls.get('age_bias').current_val if 'age_bias' in controls else 15
+            else:
+                soft_kill, fade_floor, age_bias = 80, 0.6, 15
+
+            if self.soft_mode == "Удалять клетки":
+                g = layer.grid
                 if not g.any(): continue
                 alive = np.argwhere(g)
-                k = int(len(alive) * self.soft_kill_rate / 100.0)
+                k = int(len(alive) * soft_kill / 100.0)
                 if k > 0:
                     if self.old_cells_priority:
-                        # Удаляем старые клетки в приоритете
                         alive_positions = np.where(g)
-                        ages = L.age[alive_positions]
-                        sorted_indices = np.argsort(ages)[::-1]  # От старых к молодым
+                        ages = layer.age[alive_positions]
+                        sorted_indices = np.argsort(ages)[::-1]
                         remove_indices = sorted_indices[:k]
                         remove_r = alive_positions[0][remove_indices]
                         remove_c = alive_positions[1][remove_indices]
                         g[remove_r, remove_c] = False
                     else:
-                        # Случайное удаление
                         pick = alive[np.random.choice(len(alive), size=k, replace=False)]
                         g[pick[:, 0], pick[:, 1]] = False
-        elif self.soft_mode == "Затухание клеток":
-            # Только мягкое затухание яркости
-            self.global_v_mul = max(self.soft_fade_floor,
-                                    self.global_v_mul * (1.0 - self.soft_fade_down / 100.0))
-        elif self.soft_mode == "Затухание + удаление":
-            # Комбинированный режим: сначала затухание, потом удаление
-            # 1. Применяем затухание яркости
-            self.global_v_mul = max(self.soft_fade_floor,
-                                    self.global_v_mul * (1.0 - self.soft_fade_down / 100.0))
-            
-            # 2. Дополнительно удаляем клетки с уменьшенной интенсивностью
-            fade_kill_rate = self.soft_kill_rate * 0.5  # Уменьшаем интенсивность удаления в комбо режиме
-            for L in self.layers:
-                g = L.grid
+            elif self.soft_mode == "Затухание клеток":
+                self.global_v_mul = max(fade_floor,
+                                        self.global_v_mul * (1.0 - self.soft_fade_down / 100.0))
+            elif self.soft_mode == "Затухание + удаление":
+                self.global_v_mul = max(fade_floor,
+                                        self.global_v_mul * (1.0 - self.soft_fade_down / 100.0))
+                fade_kill_rate = soft_kill * 0.5
+                g = layer.grid
                 if not g.any(): continue
                 alive = np.argwhere(g)
                 k = int(len(alive) * fade_kill_rate / 100.0)
                 if k > 0:
                     if self.old_cells_priority:
-                        # Удаляем старые клетки в приоритете
                         alive_positions = np.where(g)
-                        ages = L.age[alive_positions]
-                        sorted_indices = np.argsort(ages)[::-1]  # От старых к молодым
+                        ages = layer.age[alive_positions]
+                        sorted_indices = np.argsort(ages)[::-1]
                         remove_indices = sorted_indices[:k]
                         remove_r = alive_positions[0][remove_indices]
                         remove_c = alive_positions[1][remove_indices]
                         g[remove_r, remove_c] = False
                     else:
-                        # Случайное удаление
                         pick = alive[np.random.choice(len(alive), size=k, replace=False)]
                         g[pick[:, 0], pick[:, 1]] = False
-
+                        
     def soft_population_control(self):
         """Оптимизированная универсальная мягкая система контроля популяции для всех правил"""
         if not self.soft_clear_enable:
             return
-            
         total_grid_size = GRID_H * GRID_W
-        max_allowed_cells = int(total_grid_size * self.max_cells_percent / 100.0)
-        clear_threshold_cells = int(total_grid_size * self.soft_clear_threshold / 100.0)
-        
-        debug_info = []  # Для отладочной информации
-        
-        # Векторизованная обработка всех слоев
-        for i, L in enumerate(self.layers):
-            total_cells = np.sum(L.grid)
-            
+        debug_info = []
+        for i, layer in enumerate(self.layers):
+            if hasattr(self, 'hud') and self.hud and i < len(self.hud.layer_modules):
+                controls = self.hud.layer_modules[i]['controls']
+                soft_kill = controls.get('soft_kill').current_val if 'soft_kill' in controls else 80
+                fade_floor = controls.get('fade_floor').current_val if 'fade_floor' in controls else 0.6
+                age_bias = controls.get('age_bias').current_val if 'age_bias' in controls else 15
+                max_cells_percent = controls.get('max_cells').current_val if 'max_cells' in controls else 27
+                clear_threshold = controls.get('clear_at').current_val if 'clear_at' in controls else 58
+            else:
+                soft_kill, fade_floor, age_bias, max_cells_percent, clear_threshold = 80, 0.6, 15, 27, 58
+
+            total_cells = np.sum(layer.grid)
+            max_allowed_cells = int(total_grid_size * max_cells_percent / 100.0)
+            clear_threshold_cells = int(total_grid_size * clear_threshold / 100.0)
+
             if total_cells <= clear_threshold_cells:
                 continue
-            
-            # Вычисляем интенсивность удаления векторизованно
+
             if total_cells > max_allowed_cells:
                 excess_ratio = (total_cells - max_allowed_cells) / max_allowed_cells
-                base_removal = int(total_cells * self.soft_kill_rate / 100.0)
+                base_removal = int(total_cells * soft_kill / 100.0)
                 removal_rate = max(10, int(base_removal * (1.0 + excess_ratio)))
                 debug_info.append(f"Layer {i}: {total_cells} cells > {max_allowed_cells} max → aggressive removal {removal_rate}")
             else:
                 threshold_ratio = (total_cells - clear_threshold_cells) / (max_allowed_cells - clear_threshold_cells)
-                base_removal = int(total_cells * self.soft_kill_rate / 100.0)
+                base_removal = int(total_cells * soft_kill / 100.0)
                 removal_rate = max(5, int(base_removal * threshold_ratio * 0.3))
                 debug_info.append(f"Layer {i}: {total_cells} cells > {clear_threshold_cells} threshold → soft removal {removal_rate}")
-            
+
             removal_rate = min(removal_rate, total_cells)
-            
-            # Векторизованное получение позиций живых клеток
-            alive_mask = L.grid
+
+            alive_mask = layer.grid
             if not np.any(alive_mask):
                 continue
-                
+
             alive_r, alive_c = np.where(alive_mask)
-            ages = L.age[alive_r, alive_c]
-            
-            # Векторизованная сортировка/выбор индексов для удаления
-            if self.old_cells_priority and self.age_bias > np.random.randint(0, 100):
-                # Удаляем по возрасту (векторизованная сортировка)
-                sorted_indices = np.argsort(-ages)  # Отрицательный знак для сортировки по убыванию
+            ages = layer.age[alive_r, alive_c]
+
+            if self.old_cells_priority and age_bias > np.random.randint(0, 100):
+                sorted_indices = np.argsort(-ages)
             else:
-                # Случайный выбор (векторизованный)
                 sorted_indices = np.random.permutation(len(ages))
-            
+
             num_to_remove = min(removal_rate, len(alive_r))
             if num_to_remove <= 0:
                 continue
-                
+
             remove_indices = sorted_indices[:num_to_remove]
             remove_r = alive_r[remove_indices]
             remove_c = alive_c[remove_indices]
-            
-            # Векторизованное применение различных режимов удаления
+
             if self.soft_mode == "Удалять клетки":
-                L.grid[remove_r, remove_c] = False
-                L.age[remove_r, remove_c] = 0
+                layer.grid[remove_r, remove_c] = False
+                layer.age[remove_r, remove_c] = 0
                 debug_info[-1] += f" → removed {num_to_remove} cells instantly"
             elif self.soft_mode == "Затухание клеток":
-                L.age[remove_r, remove_c] = np.maximum(0, L.age[remove_r, remove_c] - 10)
-                zero_age_mask = L.age == 0
-                L.grid[zero_age_mask] = False
+                layer.age[remove_r, remove_c] = np.maximum(0, layer.age[remove_r, remove_c] - 10)
+                zero_age_mask = layer.age == 0
+                layer.grid[zero_age_mask] = False
                 debug_info[-1] += f" → aged {num_to_remove} cells"
             elif self.soft_mode == "Затухание + удаление":
                 half_point = num_to_remove // 2
-                
+
                 if half_point > 0:
-                    L.grid[remove_r[:half_point], remove_c[:half_point]] = False
-                    L.age[remove_r[:half_point], remove_c[:half_point]] = 0
-                
+                    layer.grid[remove_r[:half_point], remove_c[:half_point]] = False
+                    layer.age[remove_r[:half_point], remove_c[:half_point]] = 0
+
                 if num_to_remove > half_point:
                     fade_r = remove_r[half_point:]
                     fade_c = remove_c[half_point:]
-                    L.age[fade_r, fade_c] = np.maximum(0, L.age[fade_r, fade_c] - 10)
-                    zero_age_mask = L.age == 0
-                    L.grid[zero_age_mask] = False
-                
-                debug_info[-1] += f" → removed {half_point} + aged {num_to_remove - half_point} cells"
-        
-        # Векторизованный вывод отладочной информации
+                    layer.age[fade_r, fade_c] = np.maximum(0, layer.age[fade_r, fade_c] - 10)
+                    zero_age_mask = layer.age == 0
+                    layer.grid[zero_age_mask] = False
+
         if debug_info:
             self.debug_counter = getattr(self, 'debug_counter', 0) + 1
-            if self.debug_counter % 60 == 0:  # Каждую секунду при 60 FPS
+            if self.debug_counter % 60 == 0:
                 for info in debug_info:
                     print(f"🔄 Population control: {info}")
             elif not hasattr(self, 'debug_counter'):
@@ -4141,25 +4907,25 @@ class App:
         """Оптимизированное обновление слоев с векторизованными операциями"""
         # Векторизованное распределение рождений по слоям с учетом процентных настроек
         if births > 0 and self.layers:
-            # Максимальное количество клеток от RMS = SPAWN_BASE + SPAWN_SCALE
-            max_births = SPAWN_BASE + SPAWN_SCALE
-            
+            # Максимальное количество клеток от RMS = SPAWN_BASE + (SPAWN_SCALE * 3)
+            max_births = SPAWN_BASE + (SPAWN_SCALE * 3)
+            births = min(births, max_births)
             # Для каждого слоя применяем его индивидуальный процент
-            for i, layer in enumerate(self.layers):
-                # Получаем процентное значение из HUD (если доступно)
-                layer_percent = 30  # Значение по умолчанию
-                if hasattr(self, 'hud') and self.hud and hasattr(self.hud, 'modules'):
-                    if i < len(self.hud.modules):
-                        module = self.hud.modules[i]
-                        if 'controls' in module and 'initial_cells' in module['controls']:
-                            layer_percent = module['controls']['initial_cells'].current_val
-                
-                # Рассчитываем количество клеток для этого слоя на основе процента
-                layer_births = int(births * (layer_percent / 100.0))
-                
-                if layer_births > 0:
-                    print(f"🌱 DEBUG: Spawning {layer_births} cells using method '{layer.spawn_method}' for layer {i}")
-                    spawn_cells(layer.grid, layer_births, layer.spawn_method)
+            if hasattr(self, 'hud') and self.hud and hasattr(self.hud, 'layer_modules'):
+                for i, layer in enumerate(self.layers):
+                    if i < len(self.hud.layer_modules):
+                        module = self.hud.layer_modules[i]
+                        if 'controls' in module and 'spawn_percent' in module['controls']:
+                            layer_percent = module['controls']['spawn_percent'].current_val
+                        else:
+                            layer_percent = 100
+                    else:
+                        layer_percent = 100  # Default to 100% if not found
+                    # Рассчитываем количество клеток для этого слоя на основе процента
+                    layer_births = int(births * (layer_percent / 100.0))
+                    if layer_births > 0:
+                        print(f"🌱 DEBUG: Spawning {layer_births} cells using method '{layer.spawn_method}' for layer {i}")
+                        spawn_cells(layer.grid, layer_births, layer.spawn_method)
 
         # Векторизованное обновление всех слоев
         age_increment = int(self.aging_speed)
@@ -4171,80 +4937,44 @@ class App:
         else:
             random_increment = False
         
-        for i, L in enumerate(self.layers):
+        for i, layer in enumerate(self.layers):
             try:
                 # Векторизованное увеличение возраста
                 if fractional_part > 0:
                     effective_increment = age_increment + (1 if random_increment else 0)
                 else:
                     effective_increment = age_increment
-                
                 # Векторизованное обновление возраста только для живых клеток
-                alive_mask = L.grid
-                L.age[alive_mask] += effective_increment
-                L.age[~alive_mask] = 0
-                
+                alive_mask = layer.grid
+                layer.age[alive_mask] += effective_increment
+                layer.age[~alive_mask] = 0
                 # Обновление правил CA
-                L.grid = step_life(L.grid, L.rule)
-                
+                layer.grid = step_life(layer.grid, layer.rule)
                 # SAFETY: Векторизованная проверка и восстановление формы сетки
-                if L.grid.shape != (GRID_H, GRID_W):
-                    # print(f"🚨 CRITICAL: Layer {i} grid shape corrupted: {L.grid.shape} != ({GRID_H}, {GRID_W})")
-                    # print(f"   Recreating grid with correct shape...")
+                if layer.grid.shape != (GRID_H, GRID_W):
                     new_grid = np.zeros((GRID_H, GRID_W), dtype=bool)
-                    if L.grid.size > 0:
-                        copy_h = min(L.grid.shape[0], GRID_H)
-                        copy_w = min(L.grid.shape[1], GRID_W)
-                        new_grid[:copy_h, :copy_w] = L.grid[:copy_h, :copy_w]
-                    L.grid = new_grid
-                
+                    if layer.grid.size > 0:
+                        copy_h = min(layer.grid.shape[0], GRID_H)
+                        copy_w = min(layer.grid.shape[1], GRID_W)
+                        new_grid[:copy_h, :copy_w] = layer.grid[:copy_h, :copy_w]
+                    layer.grid = new_grid
                 # SAFETY: Векторизованная проверка формы массива возраста
-                if L.age.shape != L.grid.shape:
-                    # print(f"🚨 CRITICAL: Layer {i} age shape mismatch: {L.age.shape} != {L.grid.shape}")
-                    L.age = np.zeros_like(L.grid, dtype=np.int32)
-                
+                if layer.age.shape != layer.grid.shape:
+                    layer.age = np.zeros_like(layer.grid, dtype=np.int32)
                 # Векторизованная очистка краев для предотвращения визуального "выползания"
-                L.grid[[0, -1], :] = False  # Верхний и нижний края одновременно
-                L.grid[:, [0, -1]] = False  # Левый и правый края одновременно
-                
-                # Убираем debug проверки координат для улучшения производительности
-                # if np.any(L.grid):
-                #     live_coords = np.where(L.grid)
-                #     max_r, max_c = np.max(live_coords[0]), np.max(live_coords[1])
-                #     min_r, min_c = np.min(live_coords[0]), np.min(live_coords[1])
-                #     
-                #     if max_r >= GRID_H or max_c >= GRID_W or min_r < 0 or min_c < 0:
-                #         print(f"WARNING: Layer {i} has cells at invalid coords: r=[{min_r}, {max_r}], c=[{min_c}, {max_c}]")
-                #     
-                #     if max_r >= GRID_H-1 or max_c >= GRID_W-1 or min_r <= 0 or min_c <= 0:
-                #         print(f"EDGE CHECK: Layer {i} has cells near edges: r=[{min_r}, {max_r}], c=[{min_c}, {max_c}]")
-                
+                layer.grid[[0, -1], :] = False  # Верхний и нижний края одновременно
+                layer.grid[:, [0, -1]] = False  # Левый и правый края одновременно
                 # Векторизованное зеркалирование
                 if self.mirror_x:
-                    L.grid = np.fliplr(L.grid)
+                    layer.grid = np.fliplr(layer.grid)
                 if self.mirror_y:
-                    L.grid = np.flipud(L.grid)
-                
+                    layer.grid = np.flipud(layer.grid)
                 # Удаляем клетки, которые достигли максимального возраста для этого слоя
-                old_cells_mask = L.age >= L.max_age
-                L.grid[old_cells_mask] = False
-                L.age[old_cells_mask] = 0
-                    
-            except Exception as e:
-                print(f"🚨 ERROR updating layer {i}: {e}")
-                print(f"   Layer rule: {getattr(L, 'rule', 'Unknown')}")
-                print(f"   Grid shape: {getattr(L.grid, 'shape', 'Unknown') if hasattr(L, 'grid') else 'No grid'}")
-                
-                # Emergency fallback - recreate layer
-                try:
-                    L.grid = np.zeros((GRID_H, GRID_W), dtype=bool)
-                    L.age = np.zeros((GRID_H, GRID_W), dtype=np.int32)
-                    print(f"   ✅ Emergency recovery: Layer {i} reset")
-                except Exception as recovery_error:
-                    print(f"   💥 Recovery failed: {recovery_error}")
-        
-        # Применяем мягкий контроль популяции для всех слоев
-        self.soft_population_control()
+                old_cells_mask = layer.age >= layer.max_age
+                layer.grid[old_cells_mask] = False
+                layer.age[old_cells_mask] = 0
+            except Exception:
+                pass
 
     def render(self, rms: float, pitch: float):
         self.renderer.clear(BG_COLOR)
@@ -4260,39 +4990,31 @@ class App:
         )
 
         # Solo/mute
-        solos = [L for L in self.layers if L.solo and not L.mute]
-        layers = solos if solos else [L for L in self.layers if not L.mute]
+        solos = [layer for layer in self.layers if layer.solo and not layer.mute]
+        layers = solos if solos else [layer for layer in self.layers if not layer.mute]
 
-        # Убираем излишний debug вывод для улучшения производительности
-        # print(f"RENDER DEBUG: Total layers={len(self.layers)}")
-        # for idx, L in enumerate(self.layers):
-        #     print(f"  Layer {idx}: solo={L.solo}, mute={L.mute}, rule={L.rule}, cells={np.sum(L.grid)}")
-        # print(f"RENDER DEBUG: Solos found={len(solos)}, Will render={len(layers)} layers")
-        
-        # Отрисовываем каждый слой
-        for i, L in enumerate(layers):
-            # live_cells = np.sum(L.grid)  # Убираем подсчет для каждого кадра
-            # print(f"RENDER DEBUG: Layer {i} ({L.rule}): {live_cells} live cells, solo={L.solo}, mute={L.mute}")
-            
+        for i, layer in enumerate(layers):
+            live_cells = np.sum(layer.grid)
             try:
-                img = build_color_image(L.grid, L.age, L.color_mode, rms, pitch, cfg,
-                                        L.age_palette, L.rms_palette, L.rms_mode, 
-                                        L.blend_mode, L.rms_enabled, L.max_age, L.palette_mix)
-                self.renderer.blit_layer(img, L.mix, L.alpha_live, L.alpha_old)
+                img = build_color_image(layer.grid, layer.age, "Возраст + RMS", rms, pitch, cfg,
+                                        layer.age_palette, layer.rms_palette, layer.rms_mode, 
+                                        layer.blend_mode, layer.rms_enabled, layer.max_age, layer.palette_mix)
+                self.renderer.last_age_mask = layer.age.copy()
+                self.renderer.last_grid_mask = layer.grid.copy()
+                self.renderer.last_max_age = layer.max_age
+                self.renderer.blit_layer(img, getattr(layer, "blend_mode", getattr(layer, "mix", "normal")), layer.alpha_live, layer.alpha_old)
             except Exception as e:
                 print(f"RENDER ERROR in layer {i}: {e}")
-                print(f"  Layer info: rule={L.rule}, color_mode={L.color_mode}")
-                print(f"  Palettes: age={L.age_palette}, rms={L.rms_palette}")
-                print(f"  RMS mode: {L.rms_mode}, blend: {L.blend_mode}, rms_enabled: {L.rms_enabled}")
-                print(f"  Grid shape: {L.grid.shape}, Age shape: {L.age.shape}")
+                print(f"  Layer info: rule={layer.rule}, color_mode={layer.color_mode}")
+                print(f"  Palettes: age={layer.age_palette}, rms={layer.rms_palette}")
+                print(f"  RMS mode: {layer.rms_mode}, blend: {layer.blend_mode}, rms_enabled: {layer.rms_enabled}")
+                print(f"  Grid shape: {layer.grid.shape}, Age shape: {layer.age.shape}")
                 print(f"  RMS: {rms}, Pitch: {pitch}")
                 import traceback
                 traceback.print_exc()
-                # Пропускаем этот слой и продолжаем
                 continue
-                
-        frame = self.renderer.canvas
 
+        frame = self.renderer.canvas
         # FX chain (включаемые опции из GUI)
         if self.fx.get('trails', False):
             apply_trails(frame, float(self.fx.get('trail_strength', 0.06)))
@@ -4317,8 +5039,7 @@ class App:
     
     def generate_multiple_layers_from_configs(self, layer_configs: List[LayerConfig]) -> None:
         """Генерирует несколько слоев из списка конфигураций и заменяет текущие слои"""
-        print(f"🎨 Генерация {len(layer_configs)} слоев из конфигураций...")
-        
+
         # Очищаем текущие слои
         self.layers.clear()
         
@@ -4329,25 +5050,21 @@ class App:
         # Обновляем HUD
         self.hud.update_from_app(self)
         
-        print(f"✅ Успешно создано {len(self.layers)} слоев")
     
     def generate_preset_layers(self, count: int, preset_type: str = "balanced") -> None:
         """Генерирует слои используя предустановленные конфигурации"""
-        print(f"🎯 Генерация {count} слоев с пресетом '{preset_type}'...")
         
         configs = self.layer_generator.create_preset_configs(count, preset_type)
         self.generate_multiple_layers_from_configs(configs)
     
     def generate_random_layers(self, count: int) -> None:
         """Генерирует случайные слои"""
-        print(f"🎲 Генерация {count} случайных слоев...")
         
         configs = [self.layer_generator.create_random_layer_config() for _ in range(count)]
         self.generate_multiple_layers_from_configs(configs)
     
     def add_layer_from_config(self, config: LayerConfig) -> None:
         """Добавляет один слой из конфигурации к существующим"""
-        print(f"➕ Добавление нового слоя: {config.rule} | {config.age_palette}+{config.rms_palette}")
         
         new_layer = self.layer_generator.create_layer_from_config(config)
         self.layers.append(new_layer)
@@ -4355,8 +5072,6 @@ class App:
         # Обновляем HUD
         self.hud.update_from_app(self)
         
-        print(f"✅ Слой добавлен. Всего слоев: {len(self.layers)}")
-    
     def update_layer_transparency(self, layer_index: int, alpha_live: int, alpha_old: int) -> None:
         """Обновляет прозрачность конкретного слоя"""
         if 0 <= layer_index < len(self.layers):
@@ -4365,17 +5080,13 @@ class App:
             # Обновляем HUD если этот слой выбран
             if layer_index == self.selected_layer_index:
                 self.hud.update_from_app(self)
-        else:
-            print(f"❌ Неверный индекс слоя: {layer_index}")
+        
     
     def update_all_layers_transparency(self, alpha_live: int, alpha_old: int) -> None:
         """Обновляет прозрачность всех слоев"""
-        print(f"🔧 Обновление прозрачности всех слоев: α_live={alpha_live}, α_old={alpha_old}")
         
         for i, layer in enumerate(self.layers):
             self.layer_generator.update_layer_transparency(layer, alpha_live, alpha_old)
-        
-        # Обновляем HUD
         self.hud.update_from_app(self)
     
     def create_layer_config_from_current(self, layer_index: int) -> Optional[LayerConfig]:
@@ -4397,7 +5108,7 @@ class App:
                 solo=layer.solo,
                 mute=layer.mute,
                 spawn_method="Стабильные блоки",  # По умолчанию
-                initial_cells=30  # По умолчанию 30%
+                # spawn_percent=30  # По умолчанию 30%
             )
         
         return None
@@ -4409,20 +5120,15 @@ class App:
             if modify_params:
                 # Немного изменяем параметры для разнообразия
                 config.alpha_live = max(150, config.alpha_live - 30)
-                config.alpha_old = max(100, config.alpha_old - 20)
-                config.initial_cells += 10
-                
+                config.alpha_old = max(90, config.alpha_old - 10)
+                config.spawn_percent += 10
+
                 # Можно изменить палитру для визуального отличия
                 if config.rms_palette in self.layer_generator.available_rms_palettes:
                     current_index = self.layer_generator.available_rms_palettes.index(config.rms_palette)
                     new_index = (current_index + 1) % len(self.layer_generator.available_rms_palettes)
                     config.rms_palette = self.layer_generator.available_rms_palettes[new_index]
             
-            self.add_layer_from_config(config)
-            print(f"📋 Слой {layer_index} дублирован")
-        else:
-            print(f"❌ Не удалось дублировать слой {layer_index}")
-
     def create_test_pattern(self):
         """Создает тестовый паттерн для проверки работы системы"""
         # Очищаем все слои
@@ -4449,15 +5155,12 @@ class App:
                     if 0 <= r < GRID_H and 0 <= c < GRID_W:
                         layer.grid[r, c] = True
                         layer.age[r, c] = 1
-        
-        print("🧪 Test pattern created")
-
+                        
     def clear_all_layers(self):
         """Очищает все слои"""
         for layer in self.layers:
             layer.grid.fill(False)
             layer.age.fill(0)
-        print("🧹 All layers cleared")
 
     def apply_different_layer_settings(self):
         """Применяет различные настройки из app_config.json к слоям"""
@@ -4471,9 +5174,6 @@ class App:
                     config = json.load(f)
             
             layer_settings = config.get('layers', {}).get('layer_settings', [])
-            
-            print(f"🔧 Applying different layer settings to {len(self.layers)} layers...")
-            print(f"🔧 Available settings for {len(layer_settings)} layers from config")
             
             for i, layer in enumerate(self.layers):
                 if i < len(layer_settings):
@@ -4495,14 +5195,9 @@ class App:
                     layer.blend_mode = settings.get('blend_mode', getattr(layer, 'blend_mode', 'normal'))
                     layer.spawn_method = settings.get('spawn_method', getattr(layer, 'spawn_method', 'Стабильные блоки'))
                     
-                    print(f"✅ Layer {i}: {layer.rule}, {layer.age_palette}, alpha={layer.alpha_live}")
-                else:
-                    print(f"⚠️ No settings found for layer {i}, using defaults")
-                    
         except FileNotFoundError:
-            print("⚠️ app_config.json not found, using default layer settings")
-        except Exception as e:
-            print(f"❌ Error applying layer settings: {e}")
+            print("app_config.json not found, using default layer settings")
+
 
     def save_layer_settings(self):
         """Сохраняет настройки слоев в конфиг"""
@@ -4532,16 +5227,19 @@ class App:
             if resource_manager:
                 success = save_app_config(config)
                 if success:
-                    print("✅ Layer settings saved successfully")
+                    print("Layer settings saved successfully")
                 else:
-                    print("❌ Failed to save layer settings")
+                    print("Failed to save layer settings")
             else:
                 with open('app_config.json', 'w', encoding='utf-8') as f:
                     json.dump(config, f, indent=2, ensure_ascii=False)
-                print("✅ Layer settings saved to app_config.json")
-                
+                    
         except Exception as e:
-            print(f"❌ Error saving layer settings: {e}")
+            print(f"Error saving layer settings: {e}")
+
+        for i, layer in enumerate(self.layers):
+            if getattr(layer, 'mute', False):
+                continue  # Полностью пропускаем слой, если он замьючен
 
     def run(self):          
         global audio_gain
@@ -4552,23 +5250,17 @@ class App:
         audio_gain = self.gain
         
         # Инициализация HUD с текущими значениями
-        print("🔄 DEBUG: Initializing HUD from app state...")
+        print("DEBUG: Initializing HUD from app state...")
         
         # Применяем настройки из app_config.json если включен режим разных слоев
         if getattr(self, 'layers_different', True):
             self.apply_different_layer_settings()
         
         self.hud.update_from_app(self)
-        print(f"🔄 DEBUG: HUD initialized. Layer count: {len(self.layers)}")
-        
-        # Проверяем, что палитры слоев установлены правильно
+    
+        # Проверяем, что параметры слоев установлены правильно
         for i, layer in enumerate(self.layers):
-            print(f"🎨 DEBUG: Layer {i}: rule={layer.rule}, age={layer.age_palette}, rms={layer.rms_palette}")
-        
-        
-        # Профилирование для диагностики производительности
-        import time
-        profile_data = {}
+            pass
         
         while running:
             frame_start = time.time()
@@ -4579,7 +5271,6 @@ class App:
                 # Оптимизация: обрабатываем события HUD только если он видим
                 if self.hud.visible and self.hud.handle_event(ev):
                     continue  # Если HUD обработал событие, пропускаем дальнейшую обработку
-                    
                 if ev.type == pygame.QUIT:
                     running = False
                 elif ev.type == pygame.KEYDOWN:
@@ -4590,44 +5281,13 @@ class App:
                         # Инвалидируем кэш HUD при изменении видимости
                         self.hud_cache_valid = False
                     elif ev.key == pygame.K_s and (ev.mod & pygame.KMOD_CTRL):
-                        # Ctrl+S - открыть окно настроек
-                        print(f"🔧 DEBUG: Ctrl+S нажато! SETTINGS_WINDOW_AVAILABLE={SETTINGS_WINDOW_AVAILABLE}")
-                        print(f"🔧 DEBUG: self.settings_window={self.settings_window}")
-                        
                         if self.settings_window and SETTINGS_WINDOW_AVAILABLE:
-                            print(f"🔧 DEBUG: is_running={self.settings_window.is_running}")
-                            if not self.settings_window.is_running:
-                                try:
-                                    self.settings_window.start()
-                                    print("🔧 Окно настроек открыто (Ctrl+S)")
-                                except Exception as e:
-                                    print(f"❌ Ошибка открытия окна настроек: {e}")
-                            else:
-                                print("⚠️  Окно настроек уже открыто")
-                        else:
-                            print("⚠️  Окно настроек недоступно")
-                            if not SETTINGS_WINDOW_AVAILABLE:
-                                print("   - SETTINGS_WINDOW_AVAILABLE = False")
-                            if not self.settings_window:
-                                print("   - self.settings_window = None")
-                    elif ev.key == pygame.K_F12:
-                        # F12 - альтернативная горячая клавиша для окна настроек
-                        print("🔧 DEBUG: F12 нажато!")
-                        if self.settings_window and SETTINGS_WINDOW_AVAILABLE:
-                            if not self.settings_window.is_running:
-                                try:
-                                    self.settings_window.start()
-                                    print("🔧 Окно настроек открыто (F12)")
-                                except Exception as e:
-                                    print(f"❌ Ошибка открытия окна настроек: {e}")
-                            else:
-                                print("⚠️  Окно настроек уже открыто")
-                        else:
-                            print("⚠️  Окно настроек недоступно")
+                            self.settings_window.start()
                     elif ev.key == pygame.K_TAB:
-                        self.hud.mini_held = True
+                        self.hud.visible = not self.hud.visible
+                        print(f"HUD {'скрыт' if not self.hud.visible else 'показан'}")
                     elif ev.key == pygame.K_r:
-                        self.generate_random_patterns()
+                        self.generate_random_layers(3)
                     elif ev.key == pygame.K_c:
                         self.clear_all_layers()
                     elif ev.key == pygame.K_t:
@@ -4644,19 +5304,23 @@ class App:
                         self.fx['blur'] = not self.fx.get('blur', False)
                         self.hud.update_from_app(self)  # Обновляем HUD после изменений
                         self.hud_cache_valid = False  # Инвалидируем кэш
+                    elif ev.key == pygame.K_h:
+                        self.show_help()
+                    else:
+                        pass
                 elif ev.type == pygame.KEYUP:
-                    if ev.key == pygame.K_TAB:
-                        self.hud.mini_held = False
+                    pass
             
             event_time = time.time() - event_start
 
-            # снять свежие значения аудио
             audio_start = time.time()
             try:
                 while True:
                     pitch = pitch_queue.get_nowait()
                     rms   = rms_queue.get_nowait()
             except queue.Empty:
+                pass
+            except Exception:
                 pass
             audio_time = time.time() - audio_start
 
@@ -4667,10 +5331,8 @@ class App:
                     try:
                         # Применяем изменение через существующий обработчик
                         self.on_hud_parameter_change(param_name, value)
-                        print(f"🔧 Применено из окна настроек: {param_name} = {value}")
-                    except Exception as e:
-                        print(f"⚠️  Ошибка применения настройки {param_name}: {e}")
-
+                    except Exception:
+                        pass
             # тик автомата
             simulation_start = time.time()
             now = pygame.time.get_ticks()
@@ -4679,21 +5341,13 @@ class App:
                 self.last_tick = now
                 births = int(SPAWN_BASE + SPAWN_SCALE *
                              clamp01(math.log10(1.0 + VOLUME_SCALE * max(0.0, rms))))
-                
-                # Убираем debug вывод для улучшения производительности
-                # if births > 0 and rms > 0.001:
-                #     print(f"DEBUG: RMS={rms:.4f}, births={births}")
-                
-                if rms < self.sel.get('clear_rms', DEFAULT_CLEAR_RMS):
+
+                if rms <= self.sel.get('clear_rms', DEFAULT_CLEAR_RMS):
                     self.soft_clear()
                 else:
                     self.soft_recover()
                 self.update_layers(births)
                 
-                # Убираем подсчет живых клеток на каждом тике для производительности
-                # total_alive = sum(np.sum(L.grid) for L in self.layers)
-                # if total_alive > 0:
-                #     print(f"DEBUG: {total_alive} cells alive after tick")
             simulation_time = time.time() - simulation_start
 
             # рендер
@@ -4719,12 +5373,12 @@ class App:
             
             # Данные, которые обновляются реже (медленные расчеты)
             if current_time - self._info_last_update >= self._info_update_interval:
-                total_alive = sum(np.sum(L.grid) for L in self.layers)
+                total_alive = sum(np.sum(layer.grid) for layer in self.layers)
                 
                 # Создаем информацию о альфа-значениях слоев
                 alpha_info = []
                 for i, layer in enumerate(self.layers):
-                    alpha_info.append(f"L{i}: {layer.alpha_live}/{layer.alpha_old}")
+                    alpha_info.append(f"layer{i}: {layer.alpha_live}/{layer.alpha_old}")
                 
                 self._cached_info.update({
                     "Alive": f"{total_alive} cells",
@@ -4737,16 +5391,10 @@ class App:
                 })
                 self._info_last_update = current_time
             
-            # Объединяем быстрые и кэшированные данные
+            # быстрые и кэшированные данные
             info = {**fast_info, **self._cached_info}
-            
-            # ЭКСПЕРИМЕНТАЛЬНОЕ отключение HUD для тестирования производительности
-            # Раскомментируйте следующую строку чтобы полностью отключить HUD
-            # self.hud.visible = False
-            
-            # Простой текстовый HUD вместо сложного GUI
-            # Можно переключать: True = простой быстрый HUD, False = полнофункциональный медленный HUD
-            use_simple_hud = False
+
+            use_simple_hud = getattr(self.hud, "mini_held", False)
             
             # HUD отрисовка с профилированием
             hud_start = time.time()
@@ -4754,7 +5402,7 @@ class App:
                 current_time = time.time()
                 if not hasattr(self, '_hud_last_update'):
                     self._hud_last_update = 0
-                    self._hud_update_interval = 1.0 / 15.0  # Очень низкая частота для HUD
+                    self._hud_update_interval = 1.0 / 10.0  # Очень низкая частота для HUD
                 
                 # Обновляем HUD только если прошло достаточно времени
                 if current_time - self._hud_last_update >= self._hud_update_interval:
@@ -4785,7 +5433,7 @@ class App:
             # Выводим профилирование каждые 60 кадров (примерно раз в секунду)
             if not hasattr(self, '_profile_counter'):
                 self._profile_counter = 0
-            self._profile_counter += 1
+                self._profile_counter += 1
             
             if self._profile_counter % 60 == 0:
                 print(f"🔍 PROFILE: Frame={frame_time*1000:.1f}ms, Events={event_time*1000:.1f}ms, "
@@ -4801,30 +5449,13 @@ class App:
 def main():
     sel = choose_settings()
     if not sel:
-        return
-    
-    print("🚀 DEBUG: Starting application...")
-    print(f"DEBUG: Config layer_count = {sel.get('layer_count', 'not set')}")
-    
+        return  
     stream = start_audio_stream(sel['device'])
     try:
         app = App(sel)
         
-        # Быстрая проверка состояния слоев после создания
-        print("\n🔍 DEBUG: Layer state after creation:")
         for i, layer in enumerate(app.layers):
             cells = np.sum(layer.grid)
-            print(f"  Layer {i}: {cells} cells, solo={layer.solo}, mute={layer.mute}")
-        
-        # Создаем тестовый паттерн для быстрой проверки
-        print("\n📝 DEBUG: Creating test pattern...")
-        app.create_test_pattern()
-        
-        print("🎯 DEBUG: Layer state after test pattern:")
-        for i, layer in enumerate(app.layers):
-            cells = np.sum(layer.grid)
-            print(f"  Layer {i}: {cells} cells, solo={layer.solo}, mute={layer.mute}")
-        
         app.run()
     finally:
         try:
@@ -4834,152 +5465,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-# =====================
-# Auto-injected HUD v2 (non-overlapping grid layout)
-# =====================
-import pygame
-
-HUD_BG = (12, 12, 16, 230)
-HUD_HEADER = (160, 210, 255)
-HUD_PANEL = (26, 30, 40)
-HUD_PANEL_BORDER = (70, 80, 100)
-HUD_TEXT = (220, 230, 240)
-HUD_MUTED = (150, 150, 170)
-
-class HUD:
-    """
-    Compact, scrollable HUD with a simple two-column grid layout.
-    Prevents overlaps by using fixed row height and consistent margins.
-    Supports mini-HUD with Tab (shows one-line telemetry).
-    """
-    ROW_H = 26          # vertical space for one row of controls
-    GAP_Y = 10          # vertical gap between groups/boxes
-    GAP_X = 12          # horizontal gap inside panel
-    COL_GAP = 18        # gap between columns
-    TITLE_H = 24
-    PANEL_INNER = 10    # inner padding in a panel
-    COLS = 2            # number of columns in panel
-
-    def __init__(self, font, viewport_h, layer_count=1):
-        self.font = font or pygame.font.SysFont("consolas", 16)
-        self.viewport_h = viewport_h
-        self.layer_count = layer_count
-        self.visible = True
-        self.mini_held = False
-        self.scroll_y = 0
-        self._max_scroll = 0
-        self.on_parameter_change = None
-        self.layer_modules = []
-        self._panel_content_h = 0
-        self._build_layout()
-
-    def _build_layout(self):
-        # Build placeholder layout per layer to compute heights deterministically.
-        # Each layer panel will have N rows; increase N to match your control count.
-        rows_per_layer = 8  # labels/sliders/dropdowns that appear per layer
-        panel_h = self.TITLE_H + self.PANEL_INNER*2 + rows_per_layer*self.ROW_H + self.GAP_Y
-        self.layer_modules = []
-        y = self.GAP_Y
-        for i in range(self.layer_count):
-            self.layer_modules.append({
-                "rect": pygame.Rect(0, y, HUD_WIDTH - 20, panel_h),
-                "rows": rows_per_layer,
-                "title": f"Layer {i}"
-            })
-            y += panel_h
-        # Compute scroll limits
-        self._panel_content_h = y
-        self._max_scroll = max(0, self._panel_content_h - self.viewport_h)
-
-    def update_from_app(self, app):
-        # Keep panel count in sync with app.layers
-        try:
-            lc = len(getattr(app, "layers", []))
-        except Exception:
-            lc = self.layer_count
-        if lc <= 0:
-            lc = 1
-        if lc != self.layer_count:
-            self.layer_count = lc
-            self._build_layout()
-        # If viewport height changed (window resized), update scroll
-        h = getattr(getattr(app, "screen", None), "get_height", lambda: self.viewport_h)()
-        if h != self.viewport_h:
-            self.viewport_h = h
-            self._build_layout()
-
-    def handle_event(self, event):
-        if event.type == pygame.MOUSEWHEEL:
-            # unified smooth scrolling; negative scroll_y means scrolled down
-            self.scroll_y = min(0, max(-self._max_scroll, self.scroll_y + event.y * 36))
-            return True
-        return False
-
-    def _draw_header(self, surface, base_x, y, info):
-        title = self.font.render("GUITAR-LIFE v13 — Layer Controls", True, HUD_HEADER)
-        surface.blit(title, (base_x, y))
-        y += self.TITLE_H
-        stats = self.font.render(f"Layers: {self.layer_count} | Cells: {info.get('Cells','—')}", True, HUD_TEXT)
-        surface.blit(stats, (base_x, y))
-        return y + self.TITLE_H
-
-    def _draw_panel(self, surface, x, y, w, module):
-        # Background panel
-        r = pygame.Rect(x, y, w, module["rect"].height - self.GAP_Y)
-        pygame.draw.rect(surface, HUD_PANEL, r, border_radius=10)
-        pygame.draw.rect(surface, HUD_PANEL_BORDER, r, width=1, border_radius=10)
-        # Title
-        title = self.font.render(module["title"], True, HUD_TEXT)
-        surface.blit(title, (r.x + self.PANEL_INNER, r.y + self.PANEL_INNER))
-        # Grid area origin
-        gx = r.x + self.PANEL_INNER
-        gy = r.y + self.PANEL_INNER + self.TITLE_H
-        # Column widths
-        inner_w = r.width - self.PANEL_INNER*2
-        col_w = (inner_w - self.COL_GAP) // self.COLS
-        # Draw placeholder rows (labels only — safe, no overlap)
-        for row in range(module["rows"]):
-            cy = gy + row*self.ROW_H
-            # Left label
-            lbl = self.font.render(f"Label {row+1}", True, HUD_MUTED)
-            surface.blit(lbl, (gx, cy+4))
-            # Right label (simulating paired control)
-            lbl2 = self.font.render(f"Value", True, HUD_TEXT)
-            surface.blit(lbl2, (gx + col_w + self.COL_GAP, cy+4))
-
-    def draw(self, surface, info=None):
-        # mini HUD (one line only)
-        if self.mini_held:
-            txt = f"Cells: {info.get('Cells','—')}"
-            s = self.font.render(txt, True, (255,255,255))
-            surface.blit(s, (10, 10))
-        # Full panel
-        hud_surface = pygame.Surface((HUD_WIDTH, self.viewport_h), pygame.SRCALPHA)
-        hud_surface.fill(HUD_BG)
-        base_x = surface.get_width() - HUD_WIDTH + 10
-        y = 10 + self.scroll_y
-        # Header
-        y = self._draw_header(surface, base_x, y, info or {})
-        # Panels
-        panel_x = base_x
-        panel_w = HUD_WIDTH - 20
-        for module in self.layer_modules:
-            self._draw_panel(surface, panel_x, y, panel_w, module)
-            y += module["rect"].height
-        # Blit on top
-        overlay = pygame.Surface((HUD_WIDTH, self.viewport_h), pygame.SRCALPHA)
-        overlay.fill((0,0,0,0))  # transparent but reserved for future dropdowns
-        surface.blit(hud_surface, (surface.get_width()-HUD_WIDTH, 0))
-        surface.blit(overlay, (surface.get_width()-HUD_WIDTH, 0))
-        # Scrollbar
-        if self._max_scroll > 0:
-            rail = pygame.Rect(surface.get_width()-12, 10, 4, self.viewport_h-20)
-            pygame.draw.rect(surface, (80,80,100), rail)
-            view_ratio = self.viewport_h / (self._panel_content_h if self._panel_content_h>0 else self.viewport_h)
-            thumb_h = max(30, int(rail.height * view_ratio))
-            offset = 0 if self._max_scroll == 0 else -self.scroll_y / self._max_scroll
-            thumb_y = rail.y + int((rail.height - thumb_h) * offset)
-            pygame.draw.rect(surface, (160,160,200), (rail.x, thumb_y, rail.width, thumb_h), border_radius=2)

@@ -3,19 +3,19 @@
     "layer_settings": [
       {
         "rule": "Day&Night",
-        "age_palette": "Fire",
-        "rms_palette": "Fire",
-        "color_mode": "HSV-дизайны",
+        "age_palette": "White->LightGray->Gray->DarkGray",
+        "rms_palette": "White->LightGray->DarkGray",
+        "color_mode": "HSV Палитры",
         "rms_mode": "brightness",
-        "alpha_live": 85,
-        "alpha_old": 125,
-        "max_age": 41,
+        "alpha_live": 61,
+        "alpha_old": 107,
+        "max_age": 33,
         "mix": "Normal",
         "solo": false,
         "mute": false,
-        "palette_mix": 0.5,
-        "blend_mode": "normal",
-        "spawn_method": "Стабильные блоки"
+        "palette_mix": 1.0,
+        "blend_mode": "additive",
+        "spawn_method": "Смешанный"
       }
     ]
   }

@@ -41,11 +41,9 @@ class SettingsWindow:
             
             self.window.mainloop()
             
-            import traceback
-            traceback.print_exc()
         finally:
             self.is_running = False
-            print("🔧 DEBUG: _run_window завершен")
+            # Debug print removed
     
     def _create_interface(self):
         """Создает элементы интерфейса"""

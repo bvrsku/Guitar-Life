@@ -1,1 +1,0 @@
-This is the working version guitar_life21. You need to run it through the terminal 

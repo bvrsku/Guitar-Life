@@ -1,57 +1,54 @@
 {
   "layers": {
-    "layer_count": 5,
     "layer_settings": [
       {
         "rule": "Day&Night",
-        "age_palette": "Fire",
-        "rms_palette": "Fire",
+        "age_palette": "Ocean",
+        "rms_palette": "Peach",
+        "color_mode": "HSV Палитры",
+        "rms_mode": "palette",
+        "alpha_live": 158,
+        "alpha_old": 209,
+        "max_age": 70,
+        "mix": "Normal",
         "solo": false,
         "mute": false,
-        "alpha_live": 85,
-        "alpha_old": 85,
-        "alpha": 85
-      },
-      {
-        "rule": "HighLife",
-        "age_palette": "Blue->Green->Yellow->Red",
-        "rms_palette": "Fire",
-        "solo": false,
-        "mute": false,
-        "alpha_live": 220,
-        "alpha_old": 140,
-        "alpha": 180
+        "palette_mix": 0.0,
+        "blend_mode": "additive",
+        "spawn_method": "Осцилляторы"
       },
       {
         "rule": "Day&Night",
-        "age_palette": "Neon",
-        "rms_palette": "Ocean",
+        "age_palette": "Sunset",
+        "rms_palette": "Bronze",
+        "color_mode": "HSV-дизайны",
+        "rms_mode": "disabled",
+        "alpha_live": 183,
+        "alpha_old": 192,
+        "max_age": 60,
+        "mix": "Additive",
         "solo": false,
         "mute": false,
-        "alpha_live": 220,
-        "alpha_old": 140,
-        "alpha": 180
+        "palette_mix": 0.24,
+        "blend_mode": "normal",
+        "spawn_method": "Осцилляторы"
       },
       {
-        "rule": "Replicator",
-        "age_palette": "Neon",
-        "rms_palette": "Ukraine",
+        "rule": "Maze",
+        "age_palette": "Topaz",
+        "rms_palette": "Emerald",
+        "color_mode": "HSV Палитры",
+        "rms_mode": "palette",
+        "alpha_live": 195,
+        "alpha_old": 126,
+        "max_age": 60,
+        "mix": "Additive",
         "solo": false,
         "mute": false,
-        "alpha_live": 220,
-        "alpha_old": 140,
-        "alpha": 180
-      },
-      {
-        "rule": "Seeds",
-        "age_palette": "Ukraine",
-        "rms_palette": "Blue->Green->Yellow->Red",
-        "solo": false,
-        "mute": false,
-        "alpha_live": 220,
-        "alpha_old": 140,
-        "alpha": 180
+        "palette_mix": 0.5,
+        "blend_mode": "multiply",
+        "spawn_method": "Глайдеры"
       }
     ]
   }
-} 
+}
