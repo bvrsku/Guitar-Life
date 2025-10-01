@@ -30,23 +30,23 @@ class SettingsWindow:
             self.window.title("Guitar Life - Settings")
             self.window.geometry("400x600")
             
-            # Создаем интерфейс
+            # интерфейс
             self._create_interface()
             
             # Обновляем значения из приложения
             self._update_from_app()
             
-            # Запускаем цикл обновления
+            # цикл обновления
             self.window.after(100, self._update_loop)
             
             self.window.mainloop()
             
         finally:
             self.is_running = False
-            # Debug print removed
+           
     
     def _create_interface(self):
-        """Создает элементы интерфейса"""
+        """элементы интерфейса"""
         # Основные параметры
         main_frame = ttk.LabelFrame(self.window, text="Основные параметры")
         main_frame.pack(fill="x", padx=10, pady=5)
