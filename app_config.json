@@ -1,0 +1,54 @@
+{
+  "layers": {
+    "layer_settings": [
+      {
+        "rule": "Day&Night",
+        "age_palette": "Ocean",
+        "rms_palette": "Peach",
+        "color_mode": "HSV Палитры",
+        "rms_mode": "palette",
+        "alpha_live": 158,
+        "alpha_old": 209,
+        "max_age": 70,
+        "mix": "Normal",
+        "solo": false,
+        "mute": false,
+        "palette_mix": 0.0,
+        "blend_mode": "additive",
+        "spawn_method": "Осцилляторы"
+      },
+      {
+        "rule": "Day&Night",
+        "age_palette": "Sunset",
+        "rms_palette": "Bronze",
+        "color_mode": "HSV-дизайны",
+        "rms_mode": "disabled",
+        "alpha_live": 183,
+        "alpha_old": 192,
+        "max_age": 60,
+        "mix": "Additive",
+        "solo": false,
+        "mute": false,
+        "palette_mix": 0.24,
+        "blend_mode": "normal",
+        "spawn_method": "Осцилляторы"
+      },
+      {
+        "rule": "Maze",
+        "age_palette": "Topaz",
+        "rms_palette": "Emerald",
+        "color_mode": "HSV Палитры",
+        "rms_mode": "palette",
+        "alpha_live": 195,
+        "alpha_old": 126,
+        "max_age": 60,
+        "mix": "Additive",
+        "solo": false,
+        "mute": false,
+        "palette_mix": 0.5,
+        "blend_mode": "multiply",
+        "spawn_method": "Глайдеры"
+      }
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "layers": {
+    "layer_settings": [
+      {
+        "rule": "Day&Night",
+        "age_palette": "Ocean",
+        "rms_palette": "RainbowSmooth",
+        "color_mode": "HSV Палитры",
+        "rms_mode": "brightness",
+        "alpha_live": 207,
+        "alpha_old": 39,
+        "max_age": 60,
+        "mix": "Normal",
+        "solo": false,
+        "mute": false,
+        "palette_mix": 0.8533333333333334,
+        "blend_mode": "additive",
+        "spawn_method": "Смешанный"
+      }
+    ]
+  }
+}
